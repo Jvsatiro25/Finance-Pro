@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finance Pro | Full View</title>
+    <title>Finance Pro | Real-Time Sync</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -16,49 +16,56 @@
         body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
         .container { max-width: 1300px; margin: auto; }
 
-        /* Navegação */
         .month-scroller { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; margin-bottom: 20px; scrollbar-width: none; }
         .month-scroller::-webkit-scrollbar { display: none; }
         .month-tab { background: var(--card-bg); border: 1px solid var(--border); padding: 10px 20px; border-radius: 50px; cursor: pointer; white-space: nowrap; color: #94a3b8; font-weight: 600; font-size: 0.85rem; }
         .month-tab.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 
-        /* Topo - Visibilidade Total */
         .top-grid { display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 15px; margin-bottom: 20px; }
         @media (max-width: 1000px) { .top-grid { grid-template-columns: 1fr; } }
 
         .header-card { background: linear-gradient(145deg, #1e293b, #0f172a); padding: 20px; border-radius: 16px; border: 1px solid var(--border); }
         .income-group { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 
-        /* Tabelas - Onde o valor era cortado */
         .main-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         @media (max-width: 900px) { .main-layout { grid-template-columns: 1fr; } }
 
         .section-card { background: var(--card-bg); border-radius: 16px; padding: 20px; border: 1px solid var(--border); }
         .card-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         
-        /* Ajuste de Colunas para ver o valor inteiro */
         .row { display: grid; grid-template-columns: 1.8fr 1.2fr 1.2fr 40px; gap: 8px; margin-bottom: 8px; align-items: center; }
         .column-labels { display: grid; grid-template-columns: 1.8fr 1.2fr 1.2fr 40px; gap: 8px; font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase; padding-bottom: 8px; }
 
         input { 
             background: #0f172a; border: 1px solid var(--border); color: white; 
-            padding: 12px 8px; border-radius: 8px; width: 100%; font-size: 0.95rem; /* Fonte maior para leitura */
-            min-width: 0; /* Impede que o input estoure o grid */
+            padding: 12px 8px; border-radius: 8px; width: 100%; font-size: 0.95rem; 
             outline: none;
         }
         input:focus { border-color: var(--accent); }
 
-        /* Semanas */
+        /* Semanas com Barra Lateral Dinâmica */
         .weeks-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 15px; margin-top: 20px; }
-        .week-card { background: var(--card-bg); border-left: 4px solid var(--accent); padding: 20px; border-radius: 12px; border: 1px solid var(--border); border-left-width: 4px; }
-        .week-card.over { border-left-color: var(--danger); background: rgba(239, 68, 68, 0.05); }
+        
+        .week-card { 
+            background: var(--card-bg); 
+            padding: 20px; 
+            border-radius: 12px; 
+            border: 1px solid var(--border); 
+            border-left: 6px solid var(--success); /* Padrão Verde */
+            transition: border-color 0.3s ease;
+        }
+        
+        /* Classe de erro para borda vermelha */
+        .week-card.over { border-left-color: var(--danger); }
+        .week-card.over .w-meta { color: var(--danger); }
 
         .btn-add { background: var(--success); color: white; border: none; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; font-weight: bold; }
         .btn-del { color: var(--danger); background: none; border: none; cursor: pointer; font-weight: bold; font-size: 1.2rem; }
 
         .savings-bar { margin-top: 30px; background: var(--success); color: #064e3b; padding: 25px; border-radius: 16px; text-align: center; font-weight: 800; font-size: 1.4rem; }
         label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 4px; }
-        h2 { margin: 0; word-break: normal; white-space: nowrap; }
+        h2 { margin: 0; white-space: nowrap; }
+        .w-meta { font-size: 1.3rem; margin: 5px 0 15px 0; font-weight: 800; color: var(--success); transition: color 0.3s; }
     </style>
 </head>
 <body>
@@ -102,10 +109,10 @@
         </div>
     </div>
 
-    <h3 style="margin-top: 35px; color: var(--accent);">🗓️ Planejamento Semanal</h3>
+    <h3 style="margin-top: 35px; color: var(--accent);">🗓️ Planejamento Semanal (Meta Restante)</h3>
     <div class="weeks-container" id="weeks-grid"></div>
 
-    <div class="savings-bar" id="savings-box">SALDO ESTIMADO: R$ 0,00</div>
+    <div class="savings-bar" id="savings-box">SALDO FINAL ESTIMADO: R$ 0,00</div>
 </div>
 
 <script>
@@ -181,11 +188,25 @@
         let remBudget = leftover;
         weekInputs.forEach((input, index) => {
             const gasto = parseValue(input.value);
-            let meta = strategy === 'balanced' ? remBudget / (weekInputs.length - index) : leftover / weekInputs.length;
-            if (meta < 0) meta = 0;
-            input.parentElement.querySelector('.w-meta').innerText = formatter.format(meta);
+            // Calcula a meta original daquela semana
+            let metaBase = strategy === 'balanced' ? remBudget / (weekInputs.length - index) : leftover / weekInputs.length;
+            if (metaBase < 0) metaBase = 0;
+            
+            // Valor decrescente (Meta original - o que já gastei)
+            let metaRestante = metaBase - gasto;
+            
+            const metaDisplay = input.parentElement.querySelector('.w-meta');
+            metaDisplay.innerText = formatter.format(metaRestante);
+            
+            // Lógica visual de cores
+            const card = input.parentElement;
+            if (metaRestante < 0) {
+                card.classList.add('over');
+            } else {
+                card.classList.remove('over');
+            }
+
             remBudget -= gasto;
-            input.parentElement.parentElement.className = 'week-card' + (gasto > meta + 0.1 ? ' over' : '');
         });
         document.getElementById('savings-box').innerText = "SALDO FINAL ESTIMADO: " + formatter.format(remBudget);
     }
@@ -224,7 +245,13 @@
         const grid = document.getElementById('weeks-grid');
         grid.innerHTML = '';
         for (let i = 0; i < numWeeks; i++) {
-            grid.innerHTML += `<div class="week-card"><div><label>Semana ${i+1}</label><h3 class="w-meta" style="margin-bottom:10px">R$ 0,00</h3><label>Gasto Real</label><input type="text" class="w-spent" oninput="formatAndSave(this)" value="${savedWeeks[i] || 'R$ 0,00'}"></div></div>`;
+            grid.innerHTML += `
+                <div class="week-card">
+                    <label>Semana ${i+1}</label>
+                    <div class="w-meta">R$ 0,00</div>
+                    <label>Quanto você gastou?</label>
+                    <input type="text" class="w-spent" placeholder="R$ 0,00" oninput="formatAndSave(this)" value="${savedWeeks[i] || 'R$ 0,00'}">
+                </div>`;
         }
     }
 

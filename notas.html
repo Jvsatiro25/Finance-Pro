@@ -1,0 +1,200 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Pro | Notas</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg: #0f172a; --card-bg: #1e293b; --accent: #22d3ee;
+            --success: #10b981; --danger: #ef4444; --text: #f1f5f9; --border: #334155;
+            --sidebar-w: 260px;
+        }
+
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; overflow-x: hidden; }
+        
+        /* Layout */
+        .main-content { padding: 20px; transition: 0.3s; }
+        .container { max-width: 1000px; margin: auto; }
+
+        /* Top Bar (Igual ao Principal) */
+        .top-bar {
+            display: flex;
+            align-items: center;
+            padding: 15px 20px;
+            background: var(--card-bg);
+            border-bottom: 1px solid var(--border);
+            gap: 20px;
+        }
+        .menu-btn {
+            background: none; border: none; color: var(--accent);
+            font-size: 1.5rem; cursor: pointer; display: flex; align-items: center;
+        }
+        .nav-logo { font-size: 1.3rem; font-weight: 800; color: var(--accent); text-decoration: none; }
+
+        /* Sidebar (Igual ao Principal) */
+        .sidebar {
+            position: fixed; top: 0; left: calc(-1 * var(--sidebar-w));
+            width: var(--sidebar-w); height: 100%;
+            background: #111827; border-right: 1px solid var(--border);
+            transition: 0.3s ease; z-index: 1000; padding: 20px;
+        }
+        .sidebar.active { left: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .close-btn { background: none; border: none; color: var(--text); font-size: 1.2rem; cursor: pointer; }
+
+        .side-menu { display: flex; flex-direction: column; gap: 10px; }
+        .side-link {
+            padding: 12px 15px; border-radius: 8px; text-decoration: none;
+            color: var(--text); font-weight: 600; transition: 0.2s;
+            display: flex; align-items: center; gap: 12px;
+        }
+        .side-link:hover { background: var(--card-bg); color: var(--accent); }
+        .side-link.active { background: var(--accent); color: var(--bg); }
+
+        /* Overlay */
+        .overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.5); display: none; z-index: 999;
+        }
+        .overlay.active { display: block; }
+
+        /* Área de Input */
+        .note-input-area { background: var(--card-bg); padding: 20px; border-radius: 16px; border: 1px solid var(--border); margin-bottom: 30px; }
+        textarea { 
+            width: 100%; background: #0f172a; border: 1px solid var(--border); 
+            color: white; padding: 15px; border-radius: 8px; font-size: 1rem; 
+            resize: vertical; min-height: 120px; outline: none; margin-bottom: 12px;
+            font-family: inherit;
+        }
+        textarea:focus { border-color: var(--accent); }
+        .btn-save { background: var(--accent); color: var(--bg); border: none; padding: 15px; border-radius: 8px; font-weight: 800; cursor: pointer; width: 100%; font-size: 1rem; }
+
+        /* Grid de Notas Responsiva */
+        .notes-grid { 
+            display: grid; 
+            grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); 
+            gap: 20px; 
+        }
+        @media (max-width: 600px) {
+            .notes-grid { grid-template-columns: 1fr; }
+        }
+
+        .note-card { 
+            background: var(--card-bg); padding: 20px; border-radius: 12px; 
+            border: 1px solid var(--border); position: relative; 
+            animation: fadeIn 0.3s ease; display: flex; flex-direction: column;
+        }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .note-header { display: flex; justify-content: space-between; margin-bottom: 12px; align-items: center; }
+        .note-date { font-size: 0.7rem; color: #94a3b8; font-weight: 600; }
+        .btn-delete { color: var(--danger); background: none; border: none; cursor: pointer; font-size: 1.1rem; padding: 5px; }
+        .note-text { white-space: pre-wrap; line-height: 1.6; color: #cbd5e1; font-size: 0.95rem; }
+
+        label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 8px; }
+    </style>
+</head>
+<body>
+
+<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <span class="nav-logo">Finance Pro</span>
+        <button class="close-btn" onclick="toggleMenu()">✕</button>
+    </div>
+    <div class="side-menu">
+        <a href="index.html" class="side-link"><span>📊</span> Painel Principal</a>
+        <a href="notas.html" class="side-link active"><span>📝</span> Anotações</a>
+        <a href="#" class="side-link" onclick="alert('Funcionalidade em breve!')"><span>⚙️</span> Configurações</a>
+    </div>
+</div>
+
+<header class="top-bar">
+    <button class="menu-btn" onclick="toggleMenu()">☰</button>
+    <a href="index.html" class="nav-logo">Finance Pro</a>
+</header>
+
+<main class="main-content">
+    <div class="container">
+        
+
+        <div class="note-input-area">
+            <label>Nova Anotação / Lembrete</label>
+            <textarea id="note-text" placeholder="Escreva aqui suas ideias ou lembretes financeiros..."></textarea>
+            <button class="btn-save" onclick="addNote()">Salvar Anotação 📌</button>
+        </div>
+
+        <div id="notes-grid" class="notes-grid">
+            </div>
+    </div>
+</main>
+
+<script>
+    let notes = JSON.parse(localStorage.getItem('finance_pro_notes')) || [];
+
+    // Toggle Sidebar (Mesma lógica da principal)
+    function toggleMenu() {
+        document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('overlay').classList.toggle('active');
+    }
+
+    function saveNotes() {
+        localStorage.setItem('finance_pro_notes', JSON.stringify(notes));
+        renderNotes();
+    }
+
+    function addNote() {
+        const textInput = document.getElementById('note-text');
+        const text = textInput.value;
+        if (!text.trim()) return;
+
+        const newNote = {
+            id: Date.now(),
+            text: text,
+            date: new Date().toLocaleString('pt-BR', { 
+                day: '2-digit', month: '2-digit', year: 'numeric', 
+                hour: '2-digit', minute: '2-digit' 
+            })
+        };
+
+        notes.unshift(newNote);
+        textInput.value = '';
+        saveNotes();
+    }
+
+    function deleteNote(id) {
+        if(confirm("Deseja excluir esta nota?")) {
+            notes = notes.filter(n => n.id !== id);
+            saveNotes();
+        }
+    }
+
+    function renderNotes() {
+        const grid = document.getElementById('notes-grid');
+        grid.innerHTML = '';
+
+        if (notes.length === 0) {
+            grid.innerHTML = `<p style="color: #64748b; text-align: center; grid-column: 1/-1; margin-top: 20px;">Nenhuma nota salva ainda.</p>`;
+            return;
+        }
+
+        notes.forEach(note => {
+            grid.innerHTML += `
+                <div class="note-card">
+                    <div class="note-header">
+                        <span class="note-date">🗓️ ${note.date}</span>
+                        <button class="btn-delete" onclick="deleteNote(${note.id})">✕</button>
+                    </div>
+                    <div class="note-text">${note.text}</div>
+                </div>
+            `;
+        });
+    }
+
+    window.onload = renderNotes;
+</script>
+</body>
+</html>

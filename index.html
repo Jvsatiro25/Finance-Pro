@@ -3,43 +3,62 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finance Pro | Smart Organizer</title>
+    <title>Finance Pro | Full View</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #0f172a; --card-bg: #1e293b; --accent: #22d3ee;
             --success: #10b981; --danger: #ef4444; --text: #f1f5f9;
+            --border: #334155;
         }
 
-        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 20px; }
-        .container { max-width: 1100px; margin: auto; }
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 15px; }
+        .container { max-width: 1300px; margin: auto; }
 
-        .month-scroller { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; margin-bottom: 25px; scrollbar-width: none; }
+        /* Navegação */
+        .month-scroller { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; margin-bottom: 20px; scrollbar-width: none; }
         .month-scroller::-webkit-scrollbar { display: none; }
-        .month-tab { background: var(--card-bg); border: 1px solid #334155; padding: 10px 20px; border-radius: 50px; cursor: pointer; white-space: nowrap; color: #94a3b8; font-weight: 600; text-transform: capitalize; }
+        .month-tab { background: var(--card-bg); border: 1px solid var(--border); padding: 10px 20px; border-radius: 50px; cursor: pointer; white-space: nowrap; color: #94a3b8; font-weight: 600; font-size: 0.85rem; }
         .month-tab.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 
-        .top-row { display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px; margin-bottom: 30px; }
-        .header-card { background: linear-gradient(145deg, #1e293b, #0f172a); padding: 25px; border-radius: 20px; border: 1px solid #334155; }
+        /* Topo - Visibilidade Total */
+        .top-grid { display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 15px; margin-bottom: 20px; }
+        @media (max-width: 1000px) { .top-grid { grid-template-columns: 1fr; } }
 
-        .main-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(350px, 1fr)); gap: 20px; }
-        .section-card { background: var(--card-bg); border-radius: 16px; padding: 20px; border: 1px solid #334155; }
+        .header-card { background: linear-gradient(145deg, #1e293b, #0f172a); padding: 20px; border-radius: 16px; border: 1px solid var(--border); }
+        .income-group { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+
+        /* Tabelas - Onde o valor era cortado */
+        .main-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        @media (max-width: 900px) { .main-layout { grid-template-columns: 1fr; } }
+
+        .section-card { background: var(--card-bg); border-radius: 16px; padding: 20px; border: 1px solid var(--border); }
+        .card-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
         
-        .card-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 5px; color: var(--accent); }
-        .btn-add { background: var(--success); color: white; border: none; width: 30px; height: 30px; border-radius: 8px; cursor: pointer; }
+        /* Ajuste de Colunas para ver o valor inteiro */
+        .row { display: grid; grid-template-columns: 1.8fr 1.2fr 1.2fr 40px; gap: 8px; margin-bottom: 8px; align-items: center; }
+        .column-labels { display: grid; grid-template-columns: 1.8fr 1.2fr 1.2fr 40px; gap: 8px; font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase; padding-bottom: 8px; }
 
-        .column-labels { display: grid; grid-template-columns: 1.5fr 1fr 1fr 30px; gap: 8px; padding: 0 5px 10px; font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase; }
+        input { 
+            background: #0f172a; border: 1px solid var(--border); color: white; 
+            padding: 12px 8px; border-radius: 8px; width: 100%; font-size: 0.95rem; /* Fonte maior para leitura */
+            min-width: 0; /* Impede que o input estoure o grid */
+            outline: none;
+        }
+        input:focus { border-color: var(--accent); }
 
-        .row { display: grid; grid-template-columns: 1.5fr 1fr 1fr 30px; gap: 8px; margin-bottom: 10px; }
-        input { background: #0f172a; border: 1px solid #334155; color: white; padding: 8px; border-radius: 6px; width: 100%; box-sizing: border-box; font-size: 0.85rem; }
-        .btn-del { color: var(--danger); background: none; border: none; cursor: pointer; font-weight: bold; }
+        /* Semanas */
+        .weeks-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 15px; margin-top: 20px; }
+        .week-card { background: var(--card-bg); border-left: 4px solid var(--accent); padding: 20px; border-radius: 12px; border: 1px solid var(--border); border-left-width: 4px; }
+        .week-card.over { border-left-color: var(--danger); background: rgba(239, 68, 68, 0.05); }
 
-        .weeks-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 15px; margin-top: 30px; }
-        .week-card { background: #1e293b; border-left: 4px solid var(--accent); padding: 15px; border-radius: 12px; }
-        .week-card.over { border-left-color: var(--danger); }
+        .btn-add { background: var(--success); color: white; border: none; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-del { color: var(--danger); background: none; border: none; cursor: pointer; font-weight: bold; font-size: 1.2rem; }
 
-        .savings-bar { margin-top: 40px; background: var(--success); color: #064e3b; padding: 20px; border-radius: 15px; text-align: center; font-weight: 800; font-size: 1.3rem; }
-        label { font-size: 0.75rem; color: #94a3b8; text-transform: uppercase; }
+        .savings-bar { margin-top: 30px; background: var(--success); color: #064e3b; padding: 25px; border-radius: 16px; text-align: center; font-weight: 800; font-size: 1.4rem; }
+        label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 4px; }
+        h2 { margin: 0; word-break: normal; white-space: nowrap; }
     </style>
 </head>
 <body>
@@ -47,54 +66,62 @@
 <div class="container">
     <div class="month-scroller" id="month-tabs"></div>
 
-    <div class="top-row">
+    <div class="top-grid">
         <div class="header-card">
-            <label>Renda Mensal</label>
-            <input type="text" id="income" placeholder="R$ 0,00" oninput="formatAndSave(this)">
+            <label>Estratégia</label>
+            <select id="smart-strategy" onchange="calculate()" style="background:#0f172a; color:white; border:1px solid var(--border); padding:10px; border-radius:8px; width:100%;">
+                <option value="balanced">Equilibrado (Repartir)</option>
+                <option value="reserve">Reserva (Economizar)</option>
+            </select>
         </div>
-        <div class="header-card" style="text-align: right;">
-            <label>Livre para Supérfluos</label>
+
+        <div class="header-card">
+            <div class="income-group">
+                <div><label>Renda Fixa</label><input type="text" id="income" placeholder="R$ 0,00" oninput="formatAndSave(this)"></div>
+                <div><label>Renda Extra</label><input type="text" id="income-extra" placeholder="R$ 0,00" oninput="formatAndSave(this)"></div>
+            </div>
+        </div>
+
+        <div class="header-card" style="border-color: var(--accent); text-align: right;">
+            <label>Livre para Semanas</label>
             <h2 id="leftover-val" style="color: var(--accent);">R$ 0,00</h2>
         </div>
     </div>
 
-    <div class="main-grid">
+    <div class="main-layout">
         <div class="section-card">
             <div class="card-title"><h3>📋 Despesas</h3> <button class="btn-add" onclick="addRow('exp-list', '', 'R$ 0,00', 'R$ 0,00', true)">+</button></div>
-            <div class="column-labels"><span>Item</span><span>Planejado</span><span>Gasto Real</span><span></span></div>
+            <div class="column-labels"><span>Item</span><span>Meta</span><span>Real</span><span></span></div>
             <div id="exp-list"></div>
         </div>
+
         <div class="section-card">
             <div class="card-title"><h3>📺 Assinaturas</h3> <button class="btn-add" onclick="addRow('sub-list', '', 'R$ 0,00', 'R$ 0,00', true)">+</button></div>
-            <div class="column-labels"><span>Item</span><span>Planejado</span><span>Gasto Real</span><span></span></div>
+            <div class="column-labels"><span>Item</span><span>Meta</span><span>Real</span><span></span></div>
             <div id="sub-list"></div>
         </div>
     </div>
 
-    <h3 style="margin-top: 40px; color: var(--accent);">Distribuição Semanal (Supérfluos)</h3>
+    <h3 style="margin-top: 35px; color: var(--accent);">🗓️ Planejamento Semanal</h3>
     <div class="weeks-container" id="weeks-grid"></div>
 
-    <div class="savings-bar" id="savings-box">ECONOMIAS: R$ 0,00</div>
+    <div class="savings-bar" id="savings-box">SALDO ESTIMADO: R$ 0,00</div>
 </div>
 
 <script>
     const formatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
     let currentSelectedMonth = "";
-    
-    // Banco de dados principal
-    let allMonthsData = JSON.parse(localStorage.getItem('finance_pro_data')) || {};
-    // Estrutura fixa (Itens e Planejado)
-    let structure = JSON.parse(localStorage.getItem('finance_structure')) || { exp: [], sub: [] };
+    let db = JSON.parse(localStorage.getItem('finance_pro_autosave')) || {};
 
     function generateMonthTabs() {
         const tabsContainer = document.getElementById('month-tabs');
         const now = new Date();
-        for (let i = -3; i <= 9; i++) {
+        for (let i = -2; i <= 6; i++) {
             const date = new Date(now.getFullYear(), now.getMonth() + i, 1);
             const monthKey = `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}`;
             const btn = document.createElement('div');
             btn.className = `month-tab ${i === 0 ? 'active' : ''}`;
-            btn.innerText = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' });
+            btn.innerText = date.toLocaleDateString('pt-BR', { month: 'short', year: '2-digit' }).toUpperCase();
             btn.onclick = () => selectMonth(monthKey, btn);
             tabsContainer.appendChild(btn);
             if(i === 0) currentSelectedMonth = monthKey;
@@ -125,8 +152,8 @@
         div.className = 'row';
         div.innerHTML = `
             <input type="text" placeholder="Item" value="${name}" oninput="calculate()">
-            <input type="text" class="v-plan" oninput="formatAndSave(this)" value="${plan}">
-            <input type="text" class="v-real" oninput="formatAndSave(this)" value="${real}">
+            <input type="text" oninput="formatAndSave(this)" value="${plan}">
+            <input type="text" oninput="formatAndSave(this)" value="${real}">
             <button class="btn-del" onclick="this.parentElement.remove(); calculate()">✕</button>
         `;
         container.appendChild(div);
@@ -135,83 +162,73 @@
 
     function calculate() {
         const income = document.getElementById('income').value;
-        const expRows = Array.from(document.querySelectorAll('#exp-list .row')).map(r => ({n: r.children[0].value, p: r.children[1].value, r: r.children[2].value}));
-        const subRows = Array.from(document.querySelectorAll('#sub-list .row')).map(r => ({n: r.children[0].value, p: r.children[1].value, r: r.children[2].value}));
-        const weeks = Array.from(document.querySelectorAll('.w-spent')).map(i => i.value);
+        const incomeExtra = document.getElementById('income-extra').value;
+        const exp = Array.from(document.querySelectorAll('#exp-list .row')).map(r => ({n: r.children[0].value, p: r.children[1].value, r: r.children[2].value}));
+        const sub = Array.from(document.querySelectorAll('#sub-list .row')).map(r => ({n: r.children[0].value, p: r.children[1].value, r: r.children[2].value}));
+        const strategy = document.getElementById('smart-strategy').value;
+        const weekInputs = document.querySelectorAll('.w-spent');
+        const weeksValues = Array.from(weekInputs).map(i => i.value);
 
-        // Salva dados do mês
-        allMonthsData[currentSelectedMonth] = { income, exp: expRows, sub: subRows, weeks };
-        localStorage.setItem('finance_pro_data', JSON.stringify(allMonthsData));
+        db[currentSelectedMonth] = { income, incomeExtra, exp, sub, weeks: weeksValues, strategy };
+        localStorage.setItem('finance_pro_autosave', JSON.stringify(db));
 
-        // Atualiza estrutura global (Herança para próximos meses)
-        structure = {
-            exp: expRows.map(i => ({n: i.n, p: i.p})),
-            sub: subRows.map(i => ({n: i.n, p: i.p}))
-        };
-        localStorage.setItem('finance_structure', JSON.stringify(structure));
-
-        // Cálculos
-        let totalReal = 0;
-        expRows.concat(subRows).forEach(item => totalReal += parseValue(item.r));
-        const leftover = parseValue(income) - totalReal;
+        const totalInc = parseValue(income) + parseValue(incomeExtra);
+        let totalFixoReal = 0;
+        exp.concat(sub).forEach(item => totalFixoReal += parseValue(item.r));
+        const leftover = totalInc - totalFixoReal;
         document.getElementById('leftover-val').innerText = formatter.format(leftover);
 
-        const weekInputs = document.querySelectorAll('.w-spent');
-        let budgetPerWeek = leftover / (weekInputs.length || 1);
-        let runningAdj = 0, savings = 0;
-
-        weekInputs.forEach((input) => {
-            let meta = budgetPerWeek - runningAdj;
+        let remBudget = leftover;
+        weekInputs.forEach((input, index) => {
+            const gasto = parseValue(input.value);
+            let meta = strategy === 'balanced' ? remBudget / (weekInputs.length - index) : leftover / weekInputs.length;
             if (meta < 0) meta = 0;
-            const spent = parseValue(input.value);
             input.parentElement.querySelector('.w-meta').innerText = formatter.format(meta);
-            if (spent > meta) { runningAdj = (spent - meta); input.parentElement.classList.add('over'); }
-            else { savings += (meta - spent); runningAdj = 0; input.parentElement.classList.remove('over'); }
+            remBudget -= gasto;
+            input.parentElement.parentElement.className = 'week-card' + (gasto > meta + 0.1 ? ' over' : '');
         });
-        document.getElementById('savings-box').innerText = `ECONOMIAS: ${formatter.format(savings)}`;
+        document.getElementById('savings-box').innerText = "SALDO FINAL ESTIMADO: " + formatter.format(remBudget);
     }
 
     function loadMonthData() {
-        const data = allMonthsData[currentSelectedMonth];
+        const data = db[currentSelectedMonth];
         document.getElementById('exp-list').innerHTML = '';
         document.getElementById('sub-list').innerHTML = '';
 
-        if (data && (data.exp.length > 0 || data.sub.length > 0)) {
-            // Se já salvou este mês antes
+        if (data) {
             document.getElementById('income').value = data.income || 'R$ 0,00';
+            document.getElementById('income-extra').value = data.incomeExtra || 'R$ 0,00';
+            document.getElementById('smart-strategy').value = data.strategy || 'balanced';
             data.exp.forEach(e => addRow('exp-list', e.n, e.p, e.r));
             data.sub.forEach(s => addRow('sub-list', s.n, s.p, s.r));
             renderWeeks(currentSelectedMonth, data.weeks);
         } else {
-            // Mês novo: Herdar estrutura fixa mas limpar Gasto Real
-            document.getElementById('income').value = 'R$ 0,00';
-            structure.exp.forEach(e => addRow('exp-list', e.n, e.p, 'R$ 0,00'));
-            structure.sub.forEach(s => addRow('sub-list', s.n, s.p, 'R$ 0,00'));
+            const keys = Object.keys(db).sort();
+            const prevKey = keys.filter(k => k < currentSelectedMonth).pop();
+            const prevData = db[prevKey];
+            if (prevData) {
+                document.getElementById('income').value = prevData.income;
+                prevData.exp.forEach(e => addRow('exp-list', e.n, e.r, 'R$ 0,00'));
+                prevData.sub.forEach(s => addRow('sub-list', s.n, s.r, 'R$ 0,00'));
+            }
             renderWeeks(currentSelectedMonth);
         }
         calculate();
     }
 
     function renderWeeks(monthStr, savedWeeks = []) {
-        const [year, month] = monthStr.split('-');
-        const lastDay = new Date(year, month, 0).getDate();
-        const firstDay = new Date(year, month - 1, 1).getDay();
+        const [y, m] = monthStr.split('-');
+        const lastDay = new Date(y, m, 0).getDate();
+        const firstDay = new Date(y, m - 1, 1).getDay();
         const numWeeks = Math.ceil((lastDay + firstDay) / 7);
         const grid = document.getElementById('weeks-grid');
         grid.innerHTML = '';
         for (let i = 0; i < numWeeks; i++) {
-            grid.innerHTML += `
-                <div class="week-card">
-                    <label>Semana ${i+1}</label>
-                    <div style="font-size: 0.8rem; margin: 8px 0;">Meta: <span class="w-meta">R$ 0,00</span></div>
-                    <input type="text" class="w-spent" oninput="formatAndSave(this)" value="${savedWeeks[i] || 'R$ 0,00'}">
-                </div>`;
+            grid.innerHTML += `<div class="week-card"><div><label>Semana ${i+1}</label><h3 class="w-meta" style="margin-bottom:10px">R$ 0,00</h3><label>Gasto Real</label><input type="text" class="w-spent" oninput="formatAndSave(this)" value="${savedWeeks[i] || 'R$ 0,00'}"></div></div>`;
         }
     }
 
     window.onload = () => { generateMonthTabs(); loadMonthData(); };
 </script>
-
 </body>
 </html>
-

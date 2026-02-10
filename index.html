@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Finance Pro | Real-Time Sync</title>
+    <title>Finance Pro | Smart Timeline</title>
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
     <style>
         :root {
             --bg: #0f172a; --card-bg: #1e293b; --accent: #22d3ee;
-            --success: #10b981; --danger: #ef4444; --text: #f1f5f9;
-            --border: #334155;
+            --success: #10b981; --danger: #ef4444; --text: #f1f5f9; --border: #334155;
+            --locked: #64748b;
         }
 
         * { box-sizing: border-box; }
@@ -17,55 +17,40 @@
         .container { max-width: 1300px; margin: auto; }
 
         .month-scroller { display: flex; gap: 10px; overflow-x: auto; padding: 10px 0; margin-bottom: 20px; scrollbar-width: none; }
-        .month-scroller::-webkit-scrollbar { display: none; }
         .month-tab { background: var(--card-bg); border: 1px solid var(--border); padding: 10px 20px; border-radius: 50px; cursor: pointer; white-space: nowrap; color: #94a3b8; font-weight: 600; font-size: 0.85rem; }
         .month-tab.active { background: var(--accent); color: var(--bg); border-color: var(--accent); }
 
         .top-grid { display: grid; grid-template-columns: 1fr 1.5fr 1fr; gap: 15px; margin-bottom: 20px; }
         @media (max-width: 1000px) { .top-grid { grid-template-columns: 1fr; } }
-
+        
         .header-card { background: linear-gradient(145deg, #1e293b, #0f172a); padding: 20px; border-radius: 16px; border: 1px solid var(--border); }
         .income-group { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
 
         .main-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         @media (max-width: 900px) { .main-layout { grid-template-columns: 1fr; } }
-
         .section-card { background: var(--card-bg); border-radius: 16px; padding: 20px; border: 1px solid var(--border); }
-        .card-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; }
-        
+
         .row { display: grid; grid-template-columns: 1.8fr 1.2fr 1.2fr 40px; gap: 8px; margin-bottom: 8px; align-items: center; }
-        .column-labels { display: grid; grid-template-columns: 1.8fr 1.2fr 1.2fr 40px; gap: 8px; font-size: 0.65rem; color: #64748b; font-weight: 800; text-transform: uppercase; padding-bottom: 8px; }
+        input, select { background: #0f172a; border: 1px solid var(--border); color: white; padding: 12px 8px; border-radius: 8px; width: 100%; font-size: 0.95rem; outline: none; }
 
-        input { 
-            background: #0f172a; border: 1px solid var(--border); color: white; 
-            padding: 12px 8px; border-radius: 8px; width: 100%; font-size: 0.95rem; 
-            outline: none;
-        }
-        input:focus { border-color: var(--accent); }
-
-        /* Semanas com Barra Lateral Dinâmica */
-        .weeks-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 15px; margin-top: 20px; }
+        /* Cards Semanais */
+        .weeks-container { display: grid; grid-template-columns: repeat(auto-fill, minmax(250px, 1fr)); gap: 15px; margin-top: 20px; }
+        .week-card { background: var(--card-bg); padding: 20px; border-radius: 12px; border: 1px solid var(--border); border-left: 6px solid var(--success); position: relative; transition: 0.3s; }
         
-        .week-card { 
-            background: var(--card-bg); 
-            padding: 20px; 
-            border-radius: 12px; 
-            border: 1px solid var(--border); 
-            border-left: 6px solid var(--success); /* Padrão Verde */
-            transition: border-color 0.3s ease;
-        }
+        .week-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 10px; }
+        .week-dates { font-size: 0.65rem; color: #94a3b8; font-weight: 600; }
+        .status-badge { font-size: 0.55rem; padding: 2px 6px; border-radius: 4px; font-weight: 800; display: none; }
         
-        /* Classe de erro para borda vermelha */
+        .week-card.past { opacity: 0.7; border-left-color: var(--locked); background: #161e2d; }
+        .week-card.past .status-badge { display: inline-block; background: var(--locked); color: white; }
         .week-card.over { border-left-color: var(--danger); }
-        .week-card.over .w-meta { color: var(--danger); }
 
-        .btn-add { background: var(--success); color: white; border: none; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; font-weight: bold; }
-        .btn-del { color: var(--danger); background: none; border: none; cursor: pointer; font-weight: bold; font-size: 1.2rem; }
-
-        .savings-bar { margin-top: 30px; background: var(--success); color: #064e3b; padding: 25px; border-radius: 16px; text-align: center; font-weight: 800; font-size: 1.4rem; }
+        .w-meta { font-size: 1.4rem; margin: 5px 0 15px 0; font-weight: 800; color: var(--success); }
+        .savings-bar { margin-top: 30px; background: var(--success); color: #064e3b; padding: 25px; border-radius: 16px; text-align: center; font-weight: 800; font-size: 1.4rem; transition: 0.5s; }
+        
         label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 4px; }
-        h2 { margin: 0; white-space: nowrap; }
-        .w-meta { font-size: 1.3rem; margin: 5px 0 15px 0; font-weight: 800; color: var(--success); transition: color 0.3s; }
+        .btn-add { background: var(--success); color: white; border: none; width: 35px; height: 35px; border-radius: 8px; cursor: pointer; font-weight: bold; }
+        .btn-del { color: var(--danger); background: none; border: none; cursor: pointer; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -76,43 +61,44 @@
     <div class="top-grid">
         <div class="header-card">
             <label>Estratégia</label>
-            <select id="smart-strategy" onchange="calculate()" style="background:#0f172a; color:white; border:1px solid var(--border); padding:10px; border-radius:8px; width:100%;">
-                <option value="balanced">Equilibrado (Repartir)</option>
-                <option value="reserve">Reserva (Economizar)</option>
+            <select id="smart-strategy" onchange="calculate()">
+                <option value="balanced">Equilibrado (Reparte a sobra)</option>
+                <option value="reserve">Reserva (Sobra vira reserva)</option>
             </select>
         </div>
-
         <div class="header-card">
             <div class="income-group">
                 <div><label>Renda Fixa</label><input type="text" id="income" placeholder="R$ 0,00" oninput="formatAndSave(this)"></div>
                 <div><label>Renda Extra</label><input type="text" id="income-extra" placeholder="R$ 0,00" oninput="formatAndSave(this)"></div>
             </div>
         </div>
-
         <div class="header-card" style="border-color: var(--accent); text-align: right;">
-            <label>Livre para Semanas</label>
-            <h2 id="leftover-val" style="color: var(--accent);">R$ 0,00</h2>
+            <label>Livre Total no Mês</label>
+            <h2 id="leftover-val" style="color: var(--accent); margin:0;">R$ 0,00</h2>
         </div>
     </div>
 
     <div class="main-layout">
         <div class="section-card">
-            <div class="card-title"><h3>📋 Despesas</h3> <button class="btn-add" onclick="addRow('exp-list', '', 'R$ 0,00', 'R$ 0,00', true)">+</button></div>
-            <div class="column-labels"><span>Item</span><span>Meta</span><span>Real</span><span></span></div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+                <h3 style="margin:0">📋 Despesas</h3> 
+                <button class="btn-add" onclick="addRow('exp-list', '', 'R$ 0,00', 'R$ 0,00', true)">+</button>
+            </div>
             <div id="exp-list"></div>
         </div>
-
         <div class="section-card">
-            <div class="card-title"><h3>📺 Assinaturas</h3> <button class="btn-add" onclick="addRow('sub-list', '', 'R$ 0,00', 'R$ 0,00', true)">+</button></div>
-            <div class="column-labels"><span>Item</span><span>Meta</span><span>Real</span><span></span></div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px">
+                <h3 style="margin:0">📺 Assinaturas</h3> 
+                <button class="btn-add" onclick="addRow('sub-list', '', 'R$ 0,00', 'R$ 0,00', true)">+</button>
+            </div>
             <div id="sub-list"></div>
         </div>
     </div>
 
-    <h3 style="margin-top: 35px; color: var(--accent);">🗓️ Planejamento Semanal (Meta Restante)</h3>
+    <h3 style="margin-top: 35px; color: var(--accent);">🗓️ Planejamento Mensal</h3>
     <div class="weeks-container" id="weeks-grid"></div>
 
-    <div class="savings-bar" id="savings-box">SALDO FINAL ESTIMADO: R$ 0,00</div>
+    <div class="savings-bar" id="savings-box">RESERVAR: R$ 0,00</div>
 </div>
 
 <script>
@@ -157,12 +143,7 @@
         const container = document.getElementById(containerId);
         const div = document.createElement('div');
         div.className = 'row';
-        div.innerHTML = `
-            <input type="text" placeholder="Item" value="${name}" oninput="calculate()">
-            <input type="text" oninput="formatAndSave(this)" value="${plan}">
-            <input type="text" oninput="formatAndSave(this)" value="${real}">
-            <button class="btn-del" onclick="this.parentElement.remove(); calculate()">✕</button>
-        `;
+        div.innerHTML = `<input type="text" value="${name}" placeholder="Item"><input type="text" oninput="formatAndSave(this)" value="${plan}"><input type="text" oninput="formatAndSave(this)" value="${real}"><button class="btn-del" onclick="this.parentElement.remove(); calculate()">✕</button>`;
         container.appendChild(div);
         if(isManual) calculate();
     }
@@ -170,52 +151,82 @@
     function calculate() {
         const income = document.getElementById('income').value;
         const incomeExtra = document.getElementById('income-extra').value;
-        const exp = Array.from(document.querySelectorAll('#exp-list .row')).map(r => ({n: r.children[0].value, p: r.children[1].value, r: r.children[2].value}));
-        const sub = Array.from(document.querySelectorAll('#sub-list .row')).map(r => ({n: r.children[0].value, p: r.children[1].value, r: r.children[2].value}));
+        const expRows = Array.from(document.querySelectorAll('#exp-list .row'));
+        const subRows = Array.from(document.querySelectorAll('#sub-list .row'));
         const strategy = document.getElementById('smart-strategy').value;
         const weekInputs = document.querySelectorAll('.w-spent');
-        const weeksValues = Array.from(weekInputs).map(i => i.value);
 
-        db[currentSelectedMonth] = { income, incomeExtra, exp, sub, weeks: weeksValues, strategy };
+        const exp = expRows.map(r => ({n: r.children[0].value, p: r.children[1].value, r: r.children[2].value}));
+        const sub = subRows.map(r => ({n: r.children[0].value, p: r.children[1].value, r: r.children[2].value}));
+        db[currentSelectedMonth] = { income, incomeExtra, exp, sub, weeks: Array.from(weekInputs).map(i => i.value), strategy };
         localStorage.setItem('finance_pro_autosave', JSON.stringify(db));
 
         const totalInc = parseValue(income) + parseValue(incomeExtra);
         let totalFixoReal = 0;
         exp.concat(sub).forEach(item => totalFixoReal += parseValue(item.r));
-        const leftover = totalInc - totalFixoReal;
-        document.getElementById('leftover-val').innerText = formatter.format(leftover);
+        
+        const leftoverTotal = totalInc - totalFixoReal;
+        document.getElementById('leftover-val').innerText = formatter.format(leftoverTotal);
 
-        let remBudget = leftover;
-        weekInputs.forEach((input, index) => {
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        
+        let poolRestante = leftoverTotal;
+        let semanasAtivasCount = 0;
+        let gastoTotalSemanas = 0;
+
+        // Contagem prévia
+        weekInputs.forEach(input => {
+            const endDate = new Date(input.dataset.end);
+            const isPast = today > endDate;
             const gasto = parseValue(input.value);
-            // Calcula a meta original daquela semana
-            let metaBase = strategy === 'balanced' ? remBudget / (weekInputs.length - index) : leftover / weekInputs.length;
-            if (metaBase < 0) metaBase = 0;
-            
-            // Valor decrescente (Meta original - o que já gastei)
-            let metaRestante = metaBase - gasto;
-            
-            const metaDisplay = input.parentElement.querySelector('.w-meta');
-            metaDisplay.innerText = formatter.format(metaRestante);
-            
-            // Lógica visual de cores
-            const card = input.parentElement;
-            if (metaRestante < 0) {
-                card.classList.add('over');
+            gastoTotalSemanas += gasto;
+            if (isPast) {
+                poolRestante -= gasto; // Já foi gasto, remove do que sobra para o futuro
             } else {
-                card.classList.remove('over');
+                semanasAtivasCount++;
             }
-
-            remBudget -= gasto;
         });
-        document.getElementById('savings-box').innerText = "SALDO FINAL ESTIMADO: " + formatter.format(remBudget);
+
+        const metaPadrao = leftoverTotal / (weekInputs.length || 1);
+
+        weekInputs.forEach((input) => {
+            const card = input.parentElement;
+            const endDate = new Date(input.dataset.end);
+            const isPast = today > endDate;
+            const gasto = parseValue(input.value);
+            const metaDisplay = card.querySelector('.w-meta');
+
+            if (isPast) {
+                card.classList.add('past');
+                metaDisplay.innerText = formatter.format(0);
+                metaDisplay.style.color = "var(--locked)";
+            } else {
+                card.classList.remove('past');
+                let metaSugerida = strategy === 'balanced' ? (poolRestante / semanasAtivasCount) : metaPadrao;
+                if (metaSugerida < 0) metaSugerida = 0;
+                
+                let metaRestante = metaSugerida - gasto;
+                metaDisplay.innerText = formatter.format(metaRestante);
+                
+                card.classList.toggle('over', metaRestante < 0);
+                metaDisplay.style.color = metaRestante < 0 ? "var(--danger)" : "var(--success)";
+                
+                poolRestante -= gasto;
+                semanasAtivasCount--;
+            }
+        });
+
+        const saldoFinal = leftoverTotal - gastoTotalSemanas;
+        const box = document.getElementById('savings-box');
+        box.innerText = "RESERVAR: " + formatter.format(saldoFinal);
+        box.style.background = saldoFinal < 0 ? "var(--danger)" : "var(--success)";
     }
 
     function loadMonthData() {
         const data = db[currentSelectedMonth];
         document.getElementById('exp-list').innerHTML = '';
         document.getElementById('sub-list').innerHTML = '';
-
         if (data) {
             document.getElementById('income').value = data.income || 'R$ 0,00';
             document.getElementById('income-extra').value = data.incomeExtra || 'R$ 0,00';
@@ -224,34 +235,43 @@
             data.sub.forEach(s => addRow('sub-list', s.n, s.p, s.r));
             renderWeeks(currentSelectedMonth, data.weeks);
         } else {
-            const keys = Object.keys(db).sort();
-            const prevKey = keys.filter(k => k < currentSelectedMonth).pop();
-            const prevData = db[prevKey];
-            if (prevData) {
-                document.getElementById('income').value = prevData.income;
-                prevData.exp.forEach(e => addRow('exp-list', e.n, e.r, 'R$ 0,00'));
-                prevData.sub.forEach(s => addRow('sub-list', s.n, s.r, 'R$ 0,00'));
-            }
+            document.getElementById('income').value = 'R$ 0,00';
+            document.getElementById('income-extra').value = 'R$ 0,00';
             renderWeeks(currentSelectedMonth);
         }
         calculate();
     }
 
     function renderWeeks(monthStr, savedWeeks = []) {
-        const [y, m] = monthStr.split('-');
-        const lastDay = new Date(y, m, 0).getDate();
-        const firstDay = new Date(y, m - 1, 1).getDay();
-        const numWeeks = Math.ceil((lastDay + firstDay) / 7);
+        const [y, m] = monthStr.split('-').map(Number);
         const grid = document.getElementById('weeks-grid');
         grid.innerHTML = '';
-        for (let i = 0; i < numWeeks; i++) {
+        let date = new Date(y, m - 1, 1);
+        let weekNum = 1;
+        while (date.getMonth() === m - 1) {
+            let start = new Date(date);
+            let end = new Date(date);
+            end.setDate(date.getDate() + (6 - date.getDay()));
+            if (end.getMonth() !== m - 1) end = new Date(y, m, 0);
+            
+            const startFmt = start.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'});
+            const endFmt = end.toLocaleDateString('pt-BR', {day:'2-digit', month:'2-digit'});
+
             grid.innerHTML += `
                 <div class="week-card">
-                    <label>Semana ${i+1}</label>
+                    <div class="week-header">
+                        <div>
+                            <label style="margin:0">Semana ${weekNum}</label>
+                            <span class="week-dates">${startFmt} - ${endFmt}</span>
+                        </div>
+                        <span class="status-badge">ENCERRADA</span>
+                    </div>
                     <div class="w-meta">R$ 0,00</div>
-                    <label>Quanto você gastou?</label>
-                    <input type="text" class="w-spent" placeholder="R$ 0,00" oninput="formatAndSave(this)" value="${savedWeeks[i] || 'R$ 0,00'}">
+                    <label>Gasto Real</label>
+                    <input type="text" class="w-spent" data-end="${end.toISOString()}" oninput="formatAndSave(this)" value="${savedWeeks[weekNum-1] || 'R$ 0,00'}">
                 </div>`;
+            date.setDate(date.getDate() + (7 - date.getDay()));
+            weekNum++;
         }
     }
 

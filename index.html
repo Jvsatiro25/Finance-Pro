@@ -1,6 +1,9 @@
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
+    <link rel="manifest" href="manifest.json">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Finance Pro | Smart Timeline</title>
@@ -106,7 +109,7 @@
 <div class="overlay" id="overlay" onclick="toggleMenu()"></div>
 <div class="sidebar" id="sidebar">
     <div class="sidebar-header">
-        <span class="nav-logo">💎 Finance Pro</span>
+        <span class="nav-logo">Finance Pro</span>
         <button class="close-btn" onclick="toggleMenu()">✕</button>
     </div>
     <div class="side-menu">
@@ -168,6 +171,37 @@
         <div class="savings-bar" id="savings-box">RESERVAR: R$ 0,00</div>
     </div>
 </main>
+
+<div id="pwa-install-banner" style="display:none; position: fixed; bottom: 20px; right: 20px; z-index: 9999;">
+    <button onclick="installPWA()" style="background: var(--accent); color: var(--bg); border: none; padding: 15px 20px; border-radius: 12px; font-weight: 800; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.4); display: flex; align-items: center; gap: 10px;">
+        <span>📥</span> Instalar App
+    </button>
+</div>
+
+<script>
+    // Registro do Service Worker
+    if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js');
+    }
+
+    let deferredPrompt;
+    const installBanner = document.getElementById('pwa-install-banner');
+
+    window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        installBanner.style.display = 'block';
+    });
+
+    function installPWA() {
+        installBanner.style.display = 'none';
+        deferredPrompt.prompt();
+        deferredPrompt.userChoice.then((choice) => {
+            if (choice.outcome === 'accepted') console.log('Usuário aceitou');
+            deferredPrompt = null;
+        });
+    }
+</script>
 
 <script>
     const formatter = new Intl.NumberFormat('pt-BR', { style: 'currency', currency: 'BRL' });
@@ -326,7 +360,7 @@
             grid.innerHTML += `
                 <div class="week-card">
                     <div class="week-header">
-                        <div>
+                        <div>e
                             <label style="margin:0">Semana ${weekNum}</label>
                             <span class="week-dates">${startFmt} - ${endFmt}</span>
                         </div>

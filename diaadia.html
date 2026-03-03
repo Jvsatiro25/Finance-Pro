@@ -1,0 +1,1059 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Finance Pro | Dia a Dia</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+    <style>
+        :root {
+            --bg: #0f172a; --card-bg: #1e293b; --accent: #22d3ee;
+            --success: #10b981; --danger: #ef4444; --text: #f1f5f9; --border: #334155;
+            --warn: #f59e0b; --fuel: #f97316; --purple: #a78bfa; --sidebar-w: 260px;
+        }
+        * { box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: var(--bg); color: var(--text); margin: 0; padding: 0; overflow-x: hidden; }
+        .main-content { padding: 20px; }
+        .container { max-width: 1100px; margin: auto; }
+
+        .top-bar { display: flex; align-items: center; padding: 15px 20px; background: var(--card-bg); border-bottom: 1px solid var(--border); gap: 20px; }
+        .menu-btn { background: none; border: none; color: var(--accent); font-size: 1.5rem; cursor: pointer; }
+        .nav-logo { font-size: 1.3rem; font-weight: 800; color: var(--accent); text-decoration: none; }
+        .sidebar { position: fixed; top: 0; left: calc(-1 * var(--sidebar-w)); width: var(--sidebar-w); height: 100%; background: #111827; border-right: 1px solid var(--border); transition: 0.3s ease; z-index: 1000; padding: 20px; }
+        .sidebar.active { left: 0; }
+        .sidebar-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .close-btn { background: none; border: none; color: var(--text); font-size: 1.2rem; cursor: pointer; }
+        .side-menu { display: flex; flex-direction: column; gap: 10px; }
+        .side-link { padding: 12px 15px; border-radius: 8px; text-decoration: none; color: var(--text); font-weight: 600; transition: 0.2s; display: flex; align-items: center; gap: 12px; }
+        .side-link:hover { background: var(--card-bg); color: var(--accent); }
+        .side-link.active { background: var(--accent); color: var(--bg); }
+        .overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); display: none; z-index: 999; }
+        .overlay.active { display: block; }
+
+        label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 6px; }
+        input[type="text"], input[type="date"], select {
+            background: #0f172a; border: 1px solid var(--border); color: white;
+            padding: 11px 10px; border-radius: 8px; width: 100%; font-size: 0.95rem; outline: none; font-family: inherit;
+        }
+        input:focus, select:focus { border-color: var(--accent); }
+
+        /* Date nav */
+        .date-nav { display: flex; align-items: center; gap: 12px; margin-bottom: 22px; }
+        .date-nav button { background: var(--card-bg); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: 8px; cursor: pointer; font-size: 1rem; font-family: inherit; }
+        .date-nav button:hover { border-color: var(--accent); color: var(--accent); }
+        .date-label { font-size: 1.1rem; font-weight: 800; color: var(--accent); flex: 1; text-align: center; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+        @media (max-width: 420px) { .date-label { font-size: 0.88rem; } }
+        .btn-today { background: var(--accent) !important; color: var(--bg) !important; font-size: 0.8rem !important; font-weight: 800 !important; border: none !important; }
+
+        /* Stats */
+        .day-stats { display: grid; grid-template-columns: repeat(4, 1fr); gap: 14px; margin-bottom: 22px; }
+        @media (max-width: 750px) { .day-stats { grid-template-columns: 1fr 1fr; } }
+        .stat-card { background: var(--card-bg); border-radius: 14px; padding: 16px; border: 1px solid var(--border); text-align: center; }
+        .stat-card.c-green  { border-color: var(--success); }
+        .stat-card.c-red    { border-color: var(--danger); }
+        .stat-card.c-fuel   { border-color: var(--fuel); }
+        .stat-card.c-purple { border-color: var(--purple); }
+        .stat-val { font-size: 1.3rem; font-weight: 800; margin-top: 4px; }
+        @media (max-width: 380px) { .stat-val { font-size: 1.05rem; } }
+
+        /* Two col */
+        .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; margin-bottom: 18px; }
+        @media (max-width: 800px) { .two-col { grid-template-columns: 1fr; } }
+        .section-card { background: var(--card-bg); border-radius: 16px; padding: 20px; border: 1px solid var(--border); }
+        .sec-title { font-weight: 800; font-size: 0.95rem; margin: 0 0 16px 0; display: flex; align-items: center; gap: 8px; }
+
+        .input-row-3 { display: grid; grid-template-columns: 1.5fr 1fr auto; gap: 8px; align-items: end; }
+        @media (max-width: 420px) { .input-row-3 { grid-template-columns: 1fr auto; }
+            .input-row-3 > div:first-child { grid-column: 1 / -1; } }
+        .btn-add-item { background: var(--success); color: white; border: none; padding: 11px 16px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 0.9rem; }
+        .btn-add-item:hover { opacity: 0.85; }
+
+        .day-list { margin-top: 12px; display: flex; flex-direction: column; gap: 6px; }
+        .day-item { display: flex; justify-content: space-between; align-items: center; background: #0f172a; border-radius: 8px; padding: 10px 12px; font-size: 0.9rem; min-width: 0; }
+        .day-item-name { font-weight: 600; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; max-width: 160px; }
+        .day-item-val { font-weight: 800; }
+        .day-item-val.income  { color: var(--success); }
+        .day-item-val.expense { color: var(--danger); }
+        .btn-del-item { background: none; border: none; color: var(--danger); cursor: pointer; font-size: 0.9rem; padding: 2px 6px; border-radius: 4px; margin-left: 8px; }
+        .empty-list { color: #475569; text-align: center; padding: 20px 0; font-size: 0.85rem; }
+
+        /* Fuel bar */
+        .fuel-bar-bg { background: #0f172a; border-radius: 50px; height: 14px; overflow: hidden; border: 1px solid var(--border); margin: 10px 0 6px; }
+        .fuel-bar-fill { height: 100%; border-radius: 50px; background: linear-gradient(90deg, var(--danger) 0%, var(--warn) 50%, var(--success) 100%); transition: width 0.6s ease; }
+        .fuel-bar-labels { display: flex; justify-content: space-between; font-size: 0.7rem; color: #64748b; }
+
+        /* Week badge */
+        .week-badge { display: inline-flex; align-items: center; gap: 4px; background: rgba(16,185,129,0.1); border: 1px solid var(--success); color: var(--success); font-size: 0.6rem; font-weight: 800; padding: 2px 7px; border-radius: 50px; }
+
+        /* ── Trajetos ── */
+        .routes-card { background: var(--card-bg); border-radius: 16px; padding: 20px; border: 1px solid var(--border); margin-bottom: 18px; overflow: hidden; }
+        @media (max-width: 500px) { .routes-card { padding: 14px; } .section-card { padding: 14px; } .config-card { padding: 14px; } }
+        .route-history-scroll { overflow-x: auto; }
+
+        /* Favoritos */
+        .fav-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 8px; margin-bottom: 18px; }
+        .fav-btn { background: #0f172a; border: 1px solid var(--border); color: var(--text); padding: 10px 14px; border-radius: 10px; cursor: pointer; text-align: left; font-family: inherit; transition: 0.2s; }
+        .fav-btn:hover, .fav-btn.active { border-color: var(--fuel); background: rgba(249,115,22,0.07); }
+        .fav-btn-name { font-weight: 700; font-size: 0.88rem; display: block; color: var(--fuel); }
+        .fav-btn-meta { font-size: 0.65rem; color: #64748b; margin-top: 2px; display: block; }
+        .fav-btn-del { float: right; background: none; border: none; color: #475569; cursor: pointer; font-size: 0.75rem; padding: 0; margin-left: 6px; }
+        .fav-btn-del:hover { color: var(--danger); }
+
+        /* Formulário de rota */
+        .route-form { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 14px; }
+        @media (max-width: 600px) { .route-form { grid-template-columns: 1fr; } }
+
+        /* Mapa */
+        .map-wrap { border-radius: 12px; overflow: hidden; border: 1px solid var(--border); margin: 0; background: #0f172a; position: relative; }
+        #leaflet-map { width: 100%; height: 360px; background: #0f172a; cursor: crosshair !important; }
+        @media (max-width: 600px) { #leaflet-map { height: 240px; } }
+        .map-placeholder { height: 320px; display: flex; flex-direction: column; align-items: center; justify-content: center; color: #475569; gap: 8px; }
+        .map-placeholder span { font-size: 2.5rem; }
+        .map-placeholder p { margin: 0; font-size: 0.85rem; }
+        .map-loading { position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%); color: var(--fuel); font-weight: 800; font-size: 0.9rem; pointer-events: none; }
+        /* Map hint overlay */
+        #map-hint { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); background: rgba(15,23,42,0.85); backdrop-filter: blur(4px); color: var(--text); padding: 6px 14px; border-radius: 50px; font-size: 0.75rem; font-weight: 600; pointer-events: none; z-index: 1000; white-space: nowrap; border: 1px solid var(--border); }
+        /* Pin mode bar */
+        .pin-mode-bar { display: flex; gap: 8px; margin-bottom: 12px; flex-wrap: wrap; }
+        .pin-mode-btn { flex: 1; min-width: 130px; font-size: 0.78rem; padding: 8px 10px; }
+        .pin-mode-btn { flex: 1; background: #0f172a; border: 1px solid var(--border); color: #94a3b8; padding: 10px 14px; border-radius: 10px; cursor: pointer; font-family: inherit; font-weight: 700; font-size: 0.82rem; display: flex; align-items: center; gap: 8px; transition: 0.2s; }
+        .pin-mode-btn.active { border-color: var(--accent); color: var(--text); background: rgba(34,211,238,0.07); }
+        .pin-mode-btn:first-child.active { border-color: var(--success); background: rgba(16,185,129,0.07); color: var(--success); }
+        .pin-mode-btn:last-child.active  { border-color: var(--danger);  background: rgba(239,68,68,0.07);  color: var(--danger); }
+        .pin-dot { width: 12px; height: 12px; border-radius: 50%; flex-shrink: 0; border: 2px solid white; }
+        .pin-dot.origin { background: var(--success); }
+        .pin-dot.dest   { background: var(--danger); }
+        .pin-status { font-size: 0.7rem; font-weight: 800; }
+        .pin-status.set { color: var(--success); }
+
+        .btn-calcular { background: var(--fuel); color: white; border: none; padding: 12px 22px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 0.95rem; }
+        .btn-calcular:hover { background: #ea6c0a; }
+        .btn-calcular:disabled { opacity: 0.5; cursor: not-allowed; }
+
+        /* Resultado da rota */
+        .route-result { background: rgba(249,115,22,0.07); border: 1px solid rgba(249,115,22,0.3); border-radius: 12px; padding: 16px; display: none; }
+        .route-result.show { display: block; }
+        .rr-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-bottom: 14px; }
+        @media (max-width: 600px) { .rr-grid { grid-template-columns: 1fr 1fr; } }
+        @media (max-width: 360px) { .rr-grid { grid-template-columns: 1fr 1fr; font-size: 0.78rem; } }
+        .rr-item { text-align: center; }
+        .rr-val   { font-size: 1.05rem; font-weight: 800; color: var(--fuel); }
+        .rr-label { font-size: 0.6rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; margin-top: 2px; }
+
+        .route-save-row { display: grid; grid-template-columns: 1fr auto auto; gap: 10px; align-items: end; padding-top: 14px; border-top: 1px solid rgba(249,115,22,0.2); }
+        @media (max-width: 500px) { .route-save-row { grid-template-columns: 1fr 1fr; }
+            .route-save-row > div:first-child { grid-column: 1 / -1; } }
+        .btn-add-day  { background: var(--fuel); color: white; border: none; padding: 10px 16px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 0.85rem; white-space: nowrap; }
+        .btn-fav-save { background: #1e3a2f; color: var(--success); border: 1px solid var(--success); padding: 10px 16px; border-radius: 8px; font-weight: 800; cursor: pointer; font-size: 0.85rem; white-space: nowrap; }
+        .btn-fav-save.saved { background: var(--success); color: white; }
+
+        /* Toggle ida/volta */
+        .toggle-group { display: flex; gap: 8px; margin-top: 6px; }
+        .toggle-btn { background: #0f172a; border: 1px solid var(--border); color: #94a3b8; padding: 8px 16px; border-radius: 8px; cursor: pointer; font-weight: 700; font-size: 0.82rem; font-family: inherit; transition: 0.2s; }
+        .toggle-btn.active { background: rgba(249,115,22,0.15); border-color: var(--fuel); color: var(--fuel); }
+
+        /* Config */
+        .config-card { background: var(--card-bg); border-radius: 16px; padding: 20px; border: 1px solid var(--purple); margin-bottom: 30px; }
+        .config-title { font-weight: 800; font-size: 0.95rem; margin: 0 0 16px 0; color: var(--purple); }
+        .config-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+        @media (max-width: 500px) { .config-grid { grid-template-columns: 1fr; } }
+        .btn-save-cfg { background: var(--purple); color: white; border: none; padding: 11px 22px; border-radius: 8px; font-weight: 800; cursor: pointer; margin-top: 16px; font-family: inherit; }
+        .saved-msg { display: none; color: var(--success); font-size: 0.8rem; font-weight: 700; margin-top: 8px; }
+
+        /* Route history */
+        .route-history { margin-top: 20px; border-top: 1px solid var(--border); padding-top: 16px; }
+        .route-history-table { width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-top: 10px; }
+        .route-history-table th { text-align: left; padding: 7px 10px; font-size: 0.62rem; color: #64748b; text-transform: uppercase; font-weight: 700; border-bottom: 1px solid var(--border); }
+        .route-history-table td { padding: 11px 10px; border-bottom: 1px solid #1a2540; vertical-align: middle; }
+        .route-history-table tr:last-child td { border-bottom: none; }
+        .route-history-table tr:hover td { background: rgba(255,255,255,0.02); }
+        .btn-toggle-tipo { background: rgba(249,115,22,0.1); border: 1px solid rgba(249,115,22,0.3); color: var(--fuel); padding: 3px 10px; border-radius: 50px; font-size: 0.72rem; font-weight: 800; cursor: pointer; font-family: inherit; white-space: nowrap; transition: 0.15s; }
+        .btn-toggle-tipo:hover { background: rgba(249,115,22,0.25); border-color: var(--fuel); }
+        .rh-name { font-weight: 700; }
+        .rh-meta { font-size: 0.72rem; color: #64748b; margin-top: 2px; }
+        .saved-msg.show { display: block; }
+    </style>
+</head>
+<body>
+
+<div class="overlay" id="overlay" onclick="toggleMenu()"></div>
+<div class="sidebar" id="sidebar">
+    <div class="sidebar-header">
+        <span class="nav-logo">Finance Pro</span>
+        <button class="close-btn" onclick="toggleMenu()">✕</button>
+    </div>
+    <div class="side-menu">
+        <a href="index.html"       class="side-link"><span>📊</span> Painel Principal</a>
+        <a href="diaadia.html"     class="side-link active"><span>📅</span> Dia a Dia</a>
+        <a href="notas.html"       class="side-link"><span>📝</span> Anotações</a>
+        <a href="combustivel.html" class="side-link"><span>⛽</span> Combustível</a>
+        <a href="#" class="side-link" onclick="toggleMenu();document.getElementById('config-section').scrollIntoView({behavior:'smooth'})"><span>⚙️</span> Configurações</a>
+    </div>
+</div>
+
+<header class="top-bar">
+    <button class="menu-btn" onclick="toggleMenu()">☰</button>
+    <a href="index.html" class="nav-logo">Finance Pro</a>
+</header>
+
+<main class="main-content">
+<div class="container">
+
+    <!-- Data -->
+    <div class="date-nav">
+        <button onclick="changeDay(-1)">‹</button>
+        <span class="date-label" id="date-label"></span>
+        <button onclick="changeDay(1)">›</button>
+        <button class="btn-today" onclick="goToday()">Hoje</button>
+    </div>
+
+    <!-- Stats -->
+    <div class="day-stats">
+        <div class="stat-card c-green">
+            <label>💰 Renda</label>
+            <div class="stat-val" id="stat-renda" style="color:var(--success)">R$ 0,00</div>
+        </div>
+        <div class="stat-card c-red">
+            <label>💸 Gastos</label>
+            <div class="stat-val" id="stat-gastos" style="color:var(--danger)">R$ 0,00</div>
+        </div>
+        <div class="stat-card c-fuel">
+            <label>⛽ Combustível</label>
+            <div class="stat-val" id="stat-fuel" style="color:var(--fuel)">R$ 0,00</div>
+        </div>
+        <div class="stat-card c-purple">
+            <label>📊 Saldo</label>
+            <div class="stat-val" id="stat-saldo" style="color:var(--purple)">R$ 0,00</div>
+        </div>
+    </div>
+
+    <!-- Renda + Gastos -->
+    <div class="two-col">
+        <div class="section-card">
+            <p class="sec-title">💰 Renda do Dia</p>
+            <div class="input-row-3">
+                <div><label>Descrição</label><input type="text" id="r-desc" placeholder="Ex: Freelance..."></div>
+                <div><label>Valor</label><input type="text" id="r-val" placeholder="R$ 0,00" oninput="fmtField(this)"></div>
+                <button class="btn-add-item" style="background:var(--success)" onclick="addRenda()">+</button>
+            </div>
+            <div class="day-list" id="renda-list"></div>
+        </div>
+
+        <div class="section-card">
+            <p class="sec-title">
+                💸 Gastos do Dia
+                <span class="week-badge" id="week-badge" style="display:none">↗ Semana</span>
+            </p>
+            <div class="input-row-3">
+                <div><label>Descrição</label><input type="text" id="g-desc" placeholder="Ex: Almoço..."></div>
+                <div><label>Valor</label><input type="text" id="g-val" placeholder="R$ 0,00" oninput="fmtField(this)"></div>
+                <button class="btn-add-item" onclick="addGasto()">+</button>
+            </div>
+            <div class="day-list" id="gasto-list"></div>
+        </div>
+    </div>
+
+    <!-- Tanque -->
+    <div class="section-card" style="margin-bottom:18px">
+        <p class="sec-title">⛽ Nível do Tanque</p>
+        <div class="fuel-bar-bg">
+            <div class="fuel-bar-fill" id="fuel-bar" style="width:0%"></div>
+        </div>
+        <div class="fuel-bar-labels">
+            <span>Vazio</span>
+            <span id="fuel-info" style="font-weight:700;color:var(--fuel)">Configure o tanque abaixo</span>
+            <span>Cheio</span>
+        </div>
+        <div style="margin-top:10px;display:flex;gap:24px;flex-wrap:wrap;align-items:center">
+            <span style="font-size:0.85rem;color:#94a3b8">Disponível: <strong id="fuel-liters" style="color:var(--fuel)">—</strong></span>
+            <span style="font-size:0.85rem;color:#94a3b8">Custo hoje: <strong id="fuel-cost-day" style="color:var(--fuel)">R$ 0,00</strong></span>
+            <span style="font-size:0.85rem;color:#94a3b8">Km hoje: <strong id="km-hoje-display" style="color:var(--accent)">0 km</strong></span>
+            <button onclick="resetDayFuel()" style="background:none;border:1px solid #334155;color:#64748b;padding:4px 10px;border-radius:6px;cursor:pointer;font-size:0.72rem;font-weight:700;font-family:inherit">🗑️ Zerar</button>
+        </div>
+    </div>
+
+    <!-- Trajetos -->
+    <div class="routes-card">
+        <p class="sec-title">🗺️ Trajetos</p>
+
+        <!-- Favoritos -->
+        <label>Favoritos</label>
+        <div class="fav-grid" id="fav-grid">
+            <div style="color:#475569;font-size:0.82rem;padding:8px 0;grid-column:1/-1">Nenhum favorito ainda. Salve um trajeto abaixo ⬇️</div>
+        </div>
+
+        <!-- Histórico de rotas usadas -->
+        <div class="route-history" id="route-history-wrap" style="display:none">
+            <label>Rotas Utilizadas</label>
+            <div class="route-history-scroll"><div id="route-history-list"></div></div>
+        </div>
+
+        <!-- Pin mode selector -->
+        <div class="pin-mode-bar">
+            <button class="pin-mode-btn active" id="pin-origin-btn" onclick="setPinMode('origin')">
+                <span class="pin-dot origin"></span> Clique para marcar Origem
+            </button>
+            <button class="pin-mode-btn" id="pin-dest-btn" onclick="setPinMode('dest')">
+                <span class="pin-dot dest"></span> Clique para marcar Destino
+            </button>
+        </div>
+
+        <!-- Mapa sempre visível -->
+        <div class="map-wrap" id="map-wrap">
+            <div id="leaflet-map"></div>
+            <div id="map-hint">🖱️ Clique no mapa para marcar a <strong id="hint-text">Origem</strong></div>
+        </div>
+
+        <!-- Formulário preenchido pelo mapa ou manualmente -->
+        <div class="route-form" style="margin-top:14px">
+            <div>
+                <label>Origem <span id="origin-status"></span></label>
+                <input type="text" id="rt-origin" placeholder="Clique no mapa ou digite o endereço">
+            </div>
+            <div>
+                <label>Destino <span id="dest-status"></span></label>
+                <input type="text" id="rt-dest" placeholder="Clique no mapa ou digite o endereço">
+            </div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:12px;flex-wrap:wrap;margin-bottom:14px">
+            <div>
+                <label>Tipo</label>
+                <div class="toggle-group">
+                    <button class="toggle-btn active" id="toggle-ida" onclick="setTrip('ida')">➡️ Só Ida</button>
+                    <button class="toggle-btn" id="toggle-idavolta" onclick="setTrip('idavolta')">🔄 Ida e Volta</button>
+                </div>
+            </div>
+            <div style="align-self:flex-end;display:flex;gap:8px">
+                <button class="btn-calcular" id="btn-calc" onclick="calcRoute()">🗺️ Calcular Rota</button>
+                <button onclick="clearPins()" style="background:#1e293b;color:#94a3b8;border:1px solid var(--border);padding:12px 14px;border-radius:8px;cursor:pointer;font-family:inherit;font-weight:700;font-size:0.85rem">🗑️ Limpar</button>
+            </div>
+        </div>
+
+        <!-- Resultado -->
+        <div class="route-result" id="route-result">
+            <div class="rr-grid">
+                <div class="rr-item"><div class="rr-val" id="rr-km">—</div><div class="rr-label">Distância</div></div>
+                <div class="rr-item"><div class="rr-val" id="rr-litros">—</div><div class="rr-label">Combustível</div></div>
+                <div class="rr-item"><div class="rr-val" id="rr-custo">—</div><div class="rr-label">Custo</div></div>
+                <div class="rr-item"><div class="rr-val" id="rr-tipo">—</div><div class="rr-label">Tipo</div></div>
+            </div>
+            <div class="route-save-row">
+                <div>
+                    <label>Nome do Trajeto</label>
+                    <input type="text" id="rt-name" placeholder="Ex: Casa → Trabalho">
+                </div>
+                <button class="btn-add-day" onclick="addRouteToDay()">+ Adicionar ao Dia</button>
+                <button class="btn-fav-save" id="btn-fav-save" onclick="saveFavorite()">⭐ Salvar Favorito</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Config -->
+    <div class="config-card" id="config-section">
+        <p class="config-title">⚙️ Configurações</p>
+        <div class="config-grid">
+            <div>
+                <label>Consumo do Carro (km/litro)</label>
+                <input type="text" id="cfg-kml" placeholder="0,0 km/l" oninput="fmtCfgKml(this)">
+            </div>
+            <div>
+                <label>Capacidade do Tanque (litros)</label>
+                <input type="text" id="cfg-cap" placeholder="0 L" oninput="fmtCfgCap(this)">
+            </div>
+        </div>
+        <button class="btn-save-cfg" onclick="saveConfig()">💾 Salvar</button>
+        <div class="saved-msg" id="cfg-saved">✅ Configurações salvas!</div>
+    </div>
+
+</div>
+</main>
+
+<script>
+    const formatter = new Intl.NumberFormat('pt-BR', {style:'currency', currency:'BRL'});
+    const fmtBRL = v => formatter.format(v || 0);
+    const parseVal = s => parseFloat((s||'').replace(/[^\d]/g,'')) / 100 || 0;
+
+    let currentDate = new Date(); currentDate.setHours(0,0,0,0);
+    let dayDB  = JSON.parse(localStorage.getItem('fp_diaadia'))     || {};
+    let config = JSON.parse(localStorage.getItem('fp_diaadia_cfg')) || { kml: 12, cap: 50, favs: [] };
+    let tripType = 'ida';  // 'ida' | 'idavolta'
+    let lastRoute = null;  // { km, litros, custo, origin, dest, tipo }
+
+    /* ── Sidebar ─────────────────────────────────────────────────────── */
+    function toggleMenu() {
+        document.getElementById('sidebar').classList.toggle('active');
+        document.getElementById('overlay').classList.toggle('active');
+    }
+
+    /* ── Data ─────────────────────────────────────────────────────────── */
+    function dateKey(d) {
+        return `${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    }
+    function formatDateLabel(d) {
+        const today = new Date(); today.setHours(0,0,0,0);
+        const diff = Math.round((d - today) / 86400000);
+        const base = d.toLocaleDateString('pt-BR', {weekday:'long', day:'2-digit', month:'long'});
+        const cap = base.charAt(0).toUpperCase() + base.slice(1);
+        if (diff === 0) return cap + ' · Hoje';
+        if (diff === -1) return cap + ' · Ontem';
+        if (diff === 1) return cap + ' · Amanhã';
+        return cap;
+    }
+    function clearDayData(key) {
+        if (dayDB[key]) {
+            dayDB[key].rendas   = [];
+            dayDB[key].gastos   = [];
+            dayDB[key].kmHoje   = 0;
+            dayDB[key].fuelCost = 0;
+        }
+        const h = JSON.parse(localStorage.getItem('fp_route_history')) || [];
+        localStorage.setItem('fp_route_history', JSON.stringify(h.filter(r => r.date !== key)));
+        localStorage.setItem('fp_diaadia', JSON.stringify(dayDB));
+    }
+
+    function changeDay(delta) {
+        const prevKey = dateKey(currentDate);
+        currentDate = new Date(currentDate.getTime() + delta * 86400000);
+        clearDayData(prevKey);
+        renderDay();
+        renderRouteHistory();
+        updateFuelBar();
+        renderStats();
+        syncToWeek();
+    }
+
+    function goToday() {
+        const prevKey = dateKey(currentDate);
+        currentDate = new Date(); currentDate.setHours(0,0,0,0);
+        clearDayData(prevKey);
+        renderDay();
+        renderRouteHistory();
+        updateFuelBar();
+        renderStats();
+        syncToWeek();
+    }
+
+    /* ── Formatação ───────────────────────────────────────────────────── */
+    function fmtField(input) {
+        const d = input.value.replace(/\D/g,'');
+        input.value = d ? formatter.format(parseFloat(d)/100) : '';
+    }
+
+    // km/l: digita "125" → "12,5 km/l"
+    function fmtCfgKml(input) {
+        const digits = input.value.replace(/\D/g,'');
+        if (!digits) { input.value = ''; return; }
+        const num = parseFloat(digits) / 10;
+        input.value = num.toFixed(1).replace('.',',') + ' km/l';
+    }
+    function parseCfgKml(str) {
+        return parseFloat(str.replace(/[^\d,\.]/g,'').replace(',','.')) || 0;
+    }
+
+    // Litros: digita "50" → "50 L"
+    function fmtCfgCap(input) {
+        const digits = input.value.replace(/\D/g,'');
+        if (!digits) { input.value = ''; return; }
+        input.value = parseInt(digits) + ' L';
+    }
+    function parseCfgCap(str) {
+        return parseFloat(str.replace(/[^\d]/g,'')) || 0;
+    }
+
+    /* ── Dados do dia ─────────────────────────────────────────────────── */
+    function getDayData() {
+        const k = dateKey(currentDate);
+        if (!dayDB[k]) dayDB[k] = { rendas:[], gastos:[], kmHoje:0, fuelCost:0 };
+        return dayDB[k];
+    }
+    function saveDay() {
+        localStorage.setItem('fp_diaadia', JSON.stringify(dayDB));
+        renderStats();
+        updateFuelBar();
+        syncToWeek();
+    }
+
+    /* ── Renda / Gasto ─────────────────────────────────────────────────── */
+    function addRenda() {
+        const desc = document.getElementById('r-desc').value.trim() || 'Renda';
+        const val  = parseVal(document.getElementById('r-val').value);
+        if (!val) return;
+        getDayData().rendas.push({ id: Date.now(), desc, val });
+        document.getElementById('r-desc').value = '';
+        document.getElementById('r-val').value  = '';
+        saveDay(); renderLists();
+    }
+    function addGasto() {
+        const desc = document.getElementById('g-desc').value.trim() || 'Gasto';
+        const val  = parseVal(document.getElementById('g-val').value);
+        if (!val) return;
+        getDayData().gastos.push({ id: Date.now(), desc, val });
+        document.getElementById('g-desc').value = '';
+        document.getElementById('g-val').value  = '';
+        saveDay(); renderLists();
+    }
+    function deleteItem(type, id) {
+        const d = getDayData();
+        if (type === 'renda') d.rendas = d.rendas.filter(i => i.id !== id);
+        else                  d.gastos = d.gastos.filter(i => i.id !== id);
+        saveDay(); renderLists();
+    }
+
+    /* ── Sync com semana do painel ─────────────────────────────────────── */
+    function syncToWeek() {
+        const d = getDayData();
+        const totalGastos = d.gastos.reduce((s,i)=>s+i.val,0);
+        const totalFuel   = d.fuelCost || 0;
+        const total = totalGastos + totalFuel;
+        const k = dateKey(currentDate);
+        const day = new Date(k + 'T00:00:00');
+
+        let mainDB = JSON.parse(localStorage.getItem('finance_pro_autosave')) || {};
+        const monthKey = k.slice(0,7);
+
+        // Se não existe planejamento para o mês, cria estrutura base
+        if (!mainDB[monthKey]) mainDB[monthKey] = {};
+        if (!mainDB[monthKey].weeksData || mainDB[monthKey].weeksData.length === 0) {
+            // Gera semanas do mês dinamicamente (igual ao index.html)
+            const [y, m] = monthKey.split('-').map(Number);
+            let date = new Date(y, m - 1, 1);
+            const weeksGenerated = [];
+            while (date.getMonth() === m - 1) {
+                let end = new Date(date);
+                end.setDate(date.getDate() + (6 - date.getDay()));
+                if (end.getMonth() !== m - 1) end = new Date(y, m, 0);
+                weeksGenerated.push({ items: [], end: end.toISOString() });
+                date.setDate(date.getDate() + (7 - date.getDay()));
+            }
+            mainDB[monthKey].weeksData = weeksGenerated;
+        }
+
+        // Chave única para identificar entrada criada pelo dia a dia
+        const entryKey = `📅 ${k}`;
+
+        mainDB[monthKey].weeksData.forEach(week => {
+            if (!week.end) return;
+            const endDate  = new Date(week.end);
+            const startDate = new Date(endDate);
+            startDate.setDate(endDate.getDate() - 6);
+
+            if (!week.items) week.items = [];
+
+            if (day >= startDate && day <= endDate) {
+                const idx = week.items.findIndex(i => i.name === entryKey);
+                if (total > 0) {
+                    const entry = { name: entryKey, val: formatter.format(total) };
+                    if (idx >= 0) week.items[idx] = entry;
+                    else week.items.push(entry);
+                } else {
+                    if (idx >= 0) week.items.splice(idx, 1);
+                }
+            }
+        });
+
+        localStorage.setItem('finance_pro_autosave', JSON.stringify(mainDB));
+
+        const badge = document.getElementById('week-badge');
+        if (badge) badge.style.display = total > 0 ? 'inline-flex' : 'none';
+    }
+
+    /* ── Combustível ───────────────────────────────────────────────────── */
+    function getFuelState() {
+        const fuels = JSON.parse(localStorage.getItem('fp_combustivel')) || [];
+        const totalAbast = fuels.reduce((s,r) => s + (r.litros||0), 0);
+        const totalGasto = fuels.reduce((s,r) => s + (r.preco||0)*(r.litros||0), 0);
+        const precoMedioL = totalAbast > 0 ? totalGasto / totalAbast : 6.0;
+        let totalKm = 0;
+        Object.values(dayDB).forEach(d => totalKm += (d.kmHoje||0));
+        const kml = config.kml || 12;
+        const litrosUsados = totalKm / kml;
+        const litrosAtuais = Math.max(0, totalAbast - litrosUsados);
+        return { litrosAtuais, cap: config.cap||50, precoMedioL };
+    }
+
+    function resetDayFuel() {
+        const d = getDayData();
+        d.kmHoje   = 0;
+        d.fuelCost = 0;
+        localStorage.setItem('fp_diaadia', JSON.stringify(dayDB));
+        // Limpar também rotas do histórico deste dia
+        const k = dateKey(currentDate);
+        const h = JSON.parse(localStorage.getItem('fp_route_history')) || [];
+        localStorage.setItem('fp_route_history', JSON.stringify(h.filter(r => r.date !== k)));
+        updateFuelBar();
+        renderStats();
+        renderRouteHistory();
+        syncToWeek();
+    }
+
+    function updateFuelBar() {
+        const { litrosAtuais, cap } = getFuelState();
+        const pct = cap > 0 ? Math.min(100, (litrosAtuais/cap)*100) : 0;
+        document.getElementById('fuel-bar').style.width = pct + '%';
+        document.getElementById('fuel-info').textContent = `${litrosAtuais.toFixed(1)} L · ${pct.toFixed(0)}%`;
+        document.getElementById('fuel-liters').textContent = litrosAtuais.toFixed(1) + ' L';
+        // Custo e km são do dia atual (lidos do dayDB já atualizado)
+        const d = getDayData();
+        const kmHoje   = d.kmHoje   || 0;
+        const fuelCost = d.fuelCost || 0;
+        document.getElementById('fuel-cost-day').textContent   = fmtBRL(fuelCost);
+        document.getElementById('km-hoje-display').textContent = kmHoje.toFixed(1) + ' km';
+        // Barra reflete os dados exibidos: se custo e km são zero, barra vai a 0%
+        // Se o dia foi zerado, mostrar barra baseada só no tanque disponível vs capacidade
+        // já está correto pois getFuelState relê dayDB que foi zerado
+    }
+
+    /* ── Trajetos ──────────────────────────────────────────────────────── */
+    function setTrip(type) {
+        tripType = type;
+        document.getElementById('toggle-ida').classList.toggle('active', type === 'ida');
+        document.getElementById('toggle-idavolta').classList.toggle('active', type === 'idavolta');
+    }
+
+    let leafletMap   = null;
+    let routeLayer   = null;
+    let markerOrigin = null;
+    let markerDest   = null;
+    let coordOrigin  = null;
+    let coordDest    = null;
+    let pinMode      = 'origin'; // 'origin' | 'dest'
+
+    const iconOrigin = () => L.divIcon({ className: '', html: `<div style="background:#10b981;width:16px;height:16px;border-radius:50%;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.6)"></div>`, iconSize:[16,16], iconAnchor:[8,8] });
+    const iconDest   = () => L.divIcon({ className: '', html: `<div style="background:#ef4444;width:16px;height:16px;border-radius:50%;border:2px solid white;box-shadow:0 2px 8px rgba(0,0,0,0.6)"></div>`, iconSize:[16,16], iconAnchor:[8,8] });
+
+    function initMap() {
+        if (leafletMap) return;
+        leafletMap = L.map('leaflet-map').setView([-22.9, -43.2], 11);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+            attribution: '© <a href="https://openstreetmap.org/copyright">OpenStreetMap</a>'
+        }).addTo(leafletMap);
+
+        leafletMap.on('click', async (e) => {
+            const { lat, lng } = e.latlng;
+            // Reverse geocode
+            try {
+                const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&accept-language=pt-BR`);
+                const data = await res.json();
+                const addr = data.display_name || `${lat.toFixed(5)}, ${lng.toFixed(5)}`;
+                setPin(pinMode, lat, lng, addr);
+                // Auto-switch to dest after setting origin
+                if (pinMode === 'origin' && !coordDest) setPinMode('dest');
+            } catch {
+                setPin(pinMode, lat, lng, `${lat.toFixed(5)}, ${lng.toFixed(5)}`);
+                if (pinMode === 'origin' && !coordDest) setPinMode('dest');
+            }
+        });
+    }
+
+    function setPinMode(mode) {
+        pinMode = mode;
+        document.getElementById('pin-origin-btn').classList.toggle('active', mode === 'origin');
+        document.getElementById('pin-dest-btn').classList.toggle('active', mode === 'dest');
+        document.getElementById('hint-text').textContent = mode === 'origin' ? 'Origem' : 'Destino';
+    }
+
+    function setPin(mode, lat, lng, label) {
+        if (mode === 'origin') {
+            if (markerOrigin) leafletMap.removeLayer(markerOrigin);
+            markerOrigin = L.marker([lat, lng], { icon: iconOrigin() }).addTo(leafletMap)
+                .bindPopup(`<b>Origem</b><br>${label.split(',').slice(0,2).join(',')}`)
+                .openPopup();
+            coordOrigin = { lat, lon: lng, display: label };
+            document.getElementById('rt-origin').value = label.split(',').slice(0,3).join(',').trim();
+            document.getElementById('origin-status').innerHTML = '<span class="pin-status set">✓ marcado</span>';
+        } else {
+            if (markerDest) leafletMap.removeLayer(markerDest);
+            markerDest = L.marker([lat, lng], { icon: iconDest() }).addTo(leafletMap)
+                .bindPopup(`<b>Destino</b><br>${label.split(',').slice(0,2).join(',')}`)
+                .openPopup();
+            coordDest = { lat, lon: lng, display: label };
+            document.getElementById('rt-dest').value = label.split(',').slice(0,3).join(',').trim();
+            document.getElementById('dest-status').innerHTML = '<span class="pin-status set">✓ marcado</span>';
+        }
+    }
+
+    function clearPins() {
+        if (markerOrigin) { leafletMap.removeLayer(markerOrigin); markerOrigin = null; }
+        if (markerDest)   { leafletMap.removeLayer(markerDest);   markerDest   = null; }
+        if (routeLayer)   { leafletMap.removeLayer(routeLayer);   routeLayer   = null; }
+        coordOrigin = coordDest = null;
+        document.getElementById('rt-origin').value = '';
+        document.getElementById('rt-dest').value   = '';
+        document.getElementById('rt-name').value   = '';
+        document.getElementById('origin-status').innerHTML = '';
+        document.getElementById('dest-status').innerHTML   = '';
+        document.getElementById('route-result').classList.remove('show');
+        setPinMode('origin');
+    }
+
+    async function geocode(address) {
+        const url = `https://nominatim.openstreetmap.org/search?format=json&q=${encodeURIComponent(address)}&limit=1`;
+        const res = await fetch(url, { headers: { 'Accept-Language': 'pt-BR' } });
+        const data = await res.json();
+        if (!data.length) throw new Error(`Endereço não encontrado: "${address}"`);
+        return { lat: parseFloat(data[0].lat), lon: parseFloat(data[0].lon), display: data[0].display_name };
+    }
+
+    async function calcRoute(onDone = null) {
+        const originText = document.getElementById('rt-origin').value.trim();
+        const destText   = document.getElementById('rt-dest').value.trim();
+        if (!originText || !destText) { alert('Defina origem e destino — clique no mapa ou digite os endereços.'); return; }
+
+        const btn = document.getElementById('btn-calc');
+        btn.disabled = true;
+        btn.textContent = '⏳ Calculando...';
+
+        try {
+            // Usar coordenadas dos pins se disponíveis, senão geocodificar
+            const oCoord = coordOrigin || await geocode(originText);
+            const dCoord = coordDest   || await geocode(destText);
+
+            // Atualizar marcadores se vieram do geocode (texto digitado)
+            if (!coordOrigin) setPin('origin', oCoord.lat, oCoord.lon, oCoord.display);
+            if (!coordDest)   setPin('dest',   dCoord.lat, dCoord.lon, dCoord.display);
+
+            setTimeout(() => leafletMap.invalidateSize(), 100);
+
+            // Rota via OSRM
+            const osrmUrl = `https://router.project-osrm.org/route/v1/driving/${oCoord.lon},${oCoord.lat};${dCoord.lon},${dCoord.lat}?overview=full&geometries=geojson`;
+            const routeRes  = await fetch(osrmUrl);
+            const routeData = await routeRes.json();
+            if (routeData.code !== 'Ok') throw new Error('Não foi possível calcular a rota.');
+
+            const route   = routeData.routes[0];
+            let kmBase    = route.distance / 1000;
+            let km        = tripType === 'idavolta' ? kmBase * 2 : kmBase;
+
+            // Desenhar rota
+            if (routeLayer) leafletMap.removeLayer(routeLayer);
+            const coords = route.geometry.coordinates.map(([lng, lat]) => [lat, lng]);
+            routeLayer = L.polyline(coords, { color: '#f97316', weight: 5, opacity: 0.9 }).addTo(leafletMap);
+            leafletMap.fitBounds(routeLayer.getBounds(), { padding: [40, 40] });
+
+            // Custo
+            const { precoMedioL } = getFuelState();
+            const kml    = config.kml || 12;
+            const litros = km / kml;
+            const custo  = litros * precoMedioL;
+
+            lastRoute = { km, litros, custo, origin: originText, dest: destText, tipo: tripType };
+
+            document.getElementById('rr-km').textContent     = km.toFixed(1) + ' km';
+            document.getElementById('rr-litros').textContent = litros.toFixed(2) + ' L';
+            document.getElementById('rr-custo').textContent  = fmtBRL(custo);
+            document.getElementById('rr-tipo').textContent   = tripType === 'idavolta' ? '🔄 Ida e Volta' : '➡️ Só Ida';
+            document.getElementById('route-result').classList.add('show');
+
+            const nameInput = document.getElementById('rt-name');
+            if (!nameInput.value) nameInput.value = `${originText.split(',')[0]} → ${destText.split(',')[0]}`;
+            document.getElementById('btn-fav-save').classList.remove('saved');
+            document.getElementById('btn-fav-save').textContent = '⭐ Salvar Favorito';
+
+            if (onDone) onDone();
+
+        } catch (err) {
+            alert('Erro ao calcular rota: ' + err.message);
+        } finally {
+            btn.disabled = false;
+            btn.textContent = '🗺️ Calcular Rota';
+        }
+    }
+
+    function addRouteToDay() {
+        if (!lastRoute) { alert('Calcule uma rota primeiro.'); return; }
+        const d = getDayData();
+        d.kmHoje   = (d.kmHoje   || 0) + lastRoute.km;
+        d.fuelCost = (d.fuelCost || 0) + lastRoute.custo; // acumula custo da rota calculada
+
+        // Salvar no histórico de rotas
+        const name = document.getElementById('rt-name').value.trim() || `${lastRoute.origin.split(',')[0]} → ${lastRoute.dest.split(',')[0]}`;
+        let history = JSON.parse(localStorage.getItem('fp_route_history')) || [];
+        history.unshift({
+            id: Date.now(),
+            date: dateKey(currentDate),
+            name,
+            origin: lastRoute.origin,
+            dest: lastRoute.dest,
+            km: lastRoute.km,
+            litros: lastRoute.litros,
+            custo: lastRoute.custo,
+            tipo: lastRoute.tipo
+        });
+        localStorage.setItem('fp_route_history', JSON.stringify(history));
+
+        saveDay();
+        updateFuelBar();
+        renderStats();
+        renderRouteHistory();
+        document.getElementById('route-result').classList.remove('show');
+        document.querySelectorAll('.fav-btn').forEach(b => b.classList.remove('active'));
+        lastRoute = null;
+    }
+
+    function saveFavorite() {
+        if (!lastRoute) return;
+        const name = document.getElementById('rt-name').value.trim();
+        if (!name) { alert('Digite um nome para o trajeto.'); document.getElementById('rt-name').focus(); return; }
+        config.favs = config.favs || [];
+        // Evitar duplicatas pelo nome
+        const exists = config.favs.findIndex(f => f.name === name);
+        const entry = { name, origin: lastRoute.origin, dest: lastRoute.dest };
+        if (exists >= 0) config.favs[exists] = entry;
+        else config.favs.push(entry);
+        localStorage.setItem('fp_diaadia_cfg', JSON.stringify(config));
+        renderFavGrid();
+        const btn = document.getElementById('btn-fav-save');
+        btn.textContent = '✅ Salvo!';
+        btn.classList.add('saved');
+    }
+
+    /* ── Histórico de rotas ───────────────────────────────────────────── */
+    function renderRouteHistory() {
+        const allHistory = JSON.parse(localStorage.getItem('fp_route_history')) || [];
+        const history = allHistory.filter(r => r.date === dateKey(currentDate));
+        const wrap = document.getElementById('route-history-wrap');
+        const list = document.getElementById('route-history-list');
+
+        if (history.length === 0) { wrap.style.display = 'none'; return; }
+        wrap.style.display = 'block';
+
+        const fmtDate = d => { const [y,m,day]=d.split('-'); return `${day}/${m}/${y}`; };
+        const tipoLabel = t => t === 'idavolta' ? '🔄 I+V' : '➡️ Ida';
+
+        const table = document.createElement('table');
+        table.className = 'route-history-table';
+        table.innerHTML = `<thead><tr>
+            <th>Data</th><th>Trajeto</th><th>Km</th><th>Litros</th><th>Custo</th><th>Tipo</th><th></th>
+        </tr></thead>`;
+        const tbody = document.createElement('tbody');
+
+        history.forEach(r => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td style="white-space:nowrap;color:#94a3b8">${fmtDate(r.date)}</td>
+                <td><div class="rh-name"></div><div class="rh-meta"></div></td>
+                <td style="font-weight:700">${r.km.toFixed(1)} km</td>
+                <td>${r.litros.toFixed(2)} L</td>
+                <td style="font-weight:800;color:var(--fuel)">${fmtBRL(r.custo)}</td>
+                <td><button class="btn-toggle-tipo" data-id="${r.id}" title="Clique para alternar">${tipoLabel(r.tipo)}</button></td>
+                <td><button class="btn-del-item" title="Remover">✕</button></td>`;
+            tr.querySelector('.rh-name').textContent = r.name;
+            tr.querySelector('.rh-meta').textContent = `${r.origin.split(',')[0]} → ${r.dest.split(',')[0]}`;
+            tr.querySelector('.btn-toggle-tipo').addEventListener('click', () => {
+                // Alternar tipo e recalcular
+                const allH = JSON.parse(localStorage.getItem('fp_route_history')) || [];
+                const entry = allH.find(x => x.id === r.id);
+                if (!entry) return;
+                // km base (sem multiplicar por 2)
+                const kmBase = entry.tipo === 'idavolta' ? entry.km / 2 : entry.km;
+                entry.tipo   = entry.tipo === 'idavolta' ? 'ida' : 'idavolta';
+                entry.km     = entry.tipo === 'idavolta' ? kmBase * 2 : kmBase;
+                const { precoMedioL } = getFuelState();
+                entry.litros = entry.km / (config.kml || 12);
+                entry.custo  = entry.litros * precoMedioL;
+                localStorage.setItem('fp_route_history', JSON.stringify(allH));
+                // Recalcular kmHoje e fuelCost do dia
+                const todayRoutes = allH.filter(x => x.date === dateKey(currentDate));
+                const d = getDayData();
+                d.kmHoje   = todayRoutes.reduce((s,x) => s + x.km, 0);
+                d.fuelCost = todayRoutes.reduce((s,x) => s + x.custo, 0);
+                localStorage.setItem('fp_diaadia', JSON.stringify(dayDB));
+                renderRouteHistory();
+                updateFuelBar();
+                renderStats();
+                syncToWeek();
+            });
+            tr.querySelector('.btn-del-item').addEventListener('click', () => {
+                // Remover do histórico
+                const h = JSON.parse(localStorage.getItem('fp_route_history')) || [];
+                localStorage.setItem('fp_route_history', JSON.stringify(h.filter(x => x.id !== r.id)));
+                // Subtrair km e custo do dia correspondente
+                if (dayDB[r.date]) {
+                    dayDB[r.date].kmHoje   = Math.max(0, (dayDB[r.date].kmHoje   || 0) - r.km);
+                    dayDB[r.date].fuelCost = Math.max(0, (dayDB[r.date].fuelCost || 0) - r.custo);
+                    localStorage.setItem('fp_diaadia', JSON.stringify(dayDB));
+                }
+                renderRouteHistory();
+                updateFuelBar();
+                renderStats();
+                syncToWeek();
+            });
+            tbody.appendChild(tr);
+        });
+
+        table.appendChild(tbody);
+        list.innerHTML = '';
+        list.appendChild(table);
+    }
+
+    /* ── Favoritos ─────────────────────────────────────────────────────── */
+    function renderFavGrid() {
+        const grid = document.getElementById('fav-grid');
+        const favs = config.favs || [];
+        if (favs.length === 0) {
+            grid.innerHTML = '<div style="color:#475569;font-size:0.82rem;padding:8px 0;grid-column:1/-1">Nenhum favorito ainda. Salve um trajeto abaixo ⬇️</div>';
+            return;
+        }
+        grid.innerHTML = '';
+        favs.forEach((fav, i) => {
+            const btn = document.createElement('button');
+            btn.className = 'fav-btn';
+            btn.innerHTML = `<span class="fav-btn-name"><button class="fav-btn-del" title="Remover">✕</button>⭐ ${fav.name}</span><span class="fav-btn-meta">${fav.origin.split(',')[0]} → ${fav.dest.split(',')[0]}</span>`;
+            btn.querySelector('.fav-btn-del').addEventListener('click', e => {
+                e.stopPropagation();
+                config.favs.splice(i, 1);
+                localStorage.setItem('fp_diaadia_cfg', JSON.stringify(config));
+                renderFavGrid();
+            });
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('.fav-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                document.getElementById('rt-origin').value = fav.origin;
+                document.getElementById('rt-dest').value   = fav.dest;
+                document.getElementById('rt-name').value   = fav.name;
+                calcRoute(addRouteToDay);
+            });
+            grid.appendChild(btn);
+        });
+    }
+
+    /* ── Config ─────────────────────────────────────────────────────────── */
+    function loadConfig() {
+        const kml = config.kml || 12;
+        const cap = config.cap || 50;
+        document.getElementById('cfg-kml').value = kml.toFixed(1).replace('.',',') + ' km/l';
+        document.getElementById('cfg-cap').value = cap.toFixed(0) + ' L';
+    }
+
+    function saveConfig() {
+        config.kml = parseCfgKml(document.getElementById('cfg-kml').value) || 12;
+        config.cap = parseCfgCap(document.getElementById('cfg-cap').value) || 50;
+        localStorage.setItem('fp_diaadia_cfg', JSON.stringify(config));
+
+        // Recalcular fuelCost de todos os dias com o novo kml e preço atual
+        const { precoMedioL } = getFuelState();
+        Object.keys(dayDB).forEach(k => {
+            const d = dayDB[k];
+            if (d.kmHoje > 0) {
+                d.fuelCost = (d.kmHoje / config.kml) * precoMedioL;
+            }
+        });
+        localStorage.setItem('fp_diaadia', JSON.stringify(dayDB));
+
+        updateFuelBar();
+        renderStats();
+        const msg = document.getElementById('cfg-saved');
+        msg.classList.add('show');
+        setTimeout(() => msg.classList.remove('show'), 2500);
+    }
+
+    /* ── Render ─────────────────────────────────────────────────────────── */
+    function renderDay() {
+        document.getElementById('date-label').textContent = formatDateLabel(currentDate);
+        renderLists();
+        renderStats();
+        updateFuelBar();
+        document.getElementById('route-result').classList.remove('show');
+    }
+
+    function renderLists() {
+        const d = getDayData();
+
+        const rList = document.getElementById('renda-list');
+        if (!d.rendas.length) { rList.innerHTML = '<div class="empty-list">Nenhuma renda registrada.</div>'; }
+        else {
+            rList.innerHTML = '';
+            d.rendas.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'day-item';
+                el.innerHTML = `<span class="day-item-name"></span><div style="display:flex;align-items:center"><span class="day-item-val income"></span><button class="btn-del-item">✕</button></div>`;
+                el.querySelector('.day-item-name').textContent = item.desc;
+                el.querySelector('.day-item-val').textContent  = fmtBRL(item.val);
+                el.querySelector('.btn-del-item').addEventListener('click', () => deleteItem('renda', item.id));
+                rList.appendChild(el);
+            });
+        }
+
+        const gList = document.getElementById('gasto-list');
+        if (!d.gastos.length) { gList.innerHTML = '<div class="empty-list">Nenhum gasto registrado.</div>'; }
+        else {
+            gList.innerHTML = '';
+            d.gastos.forEach(item => {
+                const el = document.createElement('div');
+                el.className = 'day-item';
+                el.innerHTML = `<span class="day-item-name"></span><div style="display:flex;align-items:center"><span class="day-item-val expense"></span><button class="btn-del-item">✕</button></div>`;
+                el.querySelector('.day-item-name').textContent = item.desc;
+                el.querySelector('.day-item-val').textContent  = fmtBRL(item.val);
+                el.querySelector('.btn-del-item').addEventListener('click', () => deleteItem('gasto', item.id));
+                gList.appendChild(el);
+            });
+        }
+    }
+
+    function renderStats() {
+        const d = getDayData();
+        const renda  = d.rendas.reduce((s,i) => s+i.val, 0);
+        const gastos = d.gastos.reduce((s,i) => s+i.val, 0);
+        const fuel   = d.fuelCost || 0;
+        const saldo  = renda - gastos - fuel;
+
+        document.getElementById('stat-renda').textContent  = fmtBRL(renda);
+        document.getElementById('stat-gastos').textContent = fmtBRL(gastos);
+        document.getElementById('stat-fuel').textContent   = fmtBRL(fuel);
+        document.getElementById('stat-saldo').textContent  = fmtBRL(saldo);
+        document.getElementById('stat-saldo').style.color  = saldo >= 0 ? 'var(--success)' : 'var(--danger)';
+    }
+
+    // ── Troca automática de dia ────────────────────────────────────────────
+    function checkDayChange() {
+        const today = new Date(); today.setHours(0,0,0,0);
+        const todayKey = dateKey(today);
+        const lastKey  = localStorage.getItem('fp_last_active_day');
+
+        if (lastKey && lastKey !== todayKey) {
+            // Virou o dia: zerar dados do dia anterior (não apaga, só limpa renda/gastos/rotas)
+            if (dayDB[lastKey]) {
+                dayDB[lastKey].rendas   = [];
+                dayDB[lastKey].gastos   = [];
+                dayDB[lastKey].kmHoje   = 0;
+                dayDB[lastKey].fuelCost = 0;
+            }
+            // Limpar rotas do histórico do dia anterior
+            const h = JSON.parse(localStorage.getItem('fp_route_history')) || [];
+            localStorage.setItem('fp_route_history', JSON.stringify(h.filter(r => r.date !== lastKey)));
+            localStorage.setItem('fp_diaadia', JSON.stringify(dayDB));
+        }
+
+        localStorage.setItem('fp_last_active_day', todayKey);
+        currentDate = today;
+    }
+
+    // Verificar virada de dia a cada minuto
+    function startDayWatcher() {
+        setInterval(() => {
+            const today = new Date(); today.setHours(0,0,0,0);
+            const todayKey = dateKey(today);
+            const lastKey  = localStorage.getItem('fp_last_active_day');
+            if (lastKey !== todayKey) {
+                checkDayChange();
+                renderDay();
+                renderRouteHistory();
+            }
+        }, 60000); // checa a cada 1 minuto
+    }
+
+    window.onload = () => {
+        checkDayChange();
+        loadConfig();
+        renderFavGrid();
+        renderRouteHistory();
+        renderDay();
+        initMap();
+        startDayWatcher();
+    };
+</script>
+</body>
+</html>

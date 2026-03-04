@@ -402,22 +402,11 @@
         if (diff === 1) return cap + ' · Amanhã';
         return cap;
     }
-    function clearDayData(key) {
-        if (dayDB[key]) {
-            dayDB[key].rendas   = [];
-            dayDB[key].gastos   = [];
-            dayDB[key].kmHoje   = 0;
-            dayDB[key].fuelCost = 0;
-        }
-        const h = JSON.parse(localStorage.getItem('fp_route_history')) || [];
-        localStorage.setItem('fp_route_history', JSON.stringify(h.filter(r => r.date !== key)));
-        localStorage.setItem('fp_diaadia', JSON.stringify(dayDB));
-    }
+    // clearDayData removido: dados de cada dia são preservados para consulta histórica.
+    // O nível de combustível acumula km de todos os dias automaticamente.
 
     function changeDay(delta) {
-        const prevKey = dateKey(currentDate);
         currentDate = new Date(currentDate.getTime() + delta * 86400000);
-        clearDayData(prevKey);
         renderDay();
         renderRouteHistory();
         updateFuelBar();
@@ -426,9 +415,7 @@
     }
 
     function goToday() {
-        const prevKey = dateKey(currentDate);
         currentDate = new Date(); currentDate.setHours(0,0,0,0);
-        clearDayData(prevKey);
         renderDay();
         renderRouteHistory();
         updateFuelBar();
@@ -514,43 +501,59 @@
         let mainDB = JSON.parse(localStorage.getItem('finance_pro_autosave')) || {};
         const monthKey = k.slice(0,7);
 
-        // Se não existe planejamento para o mês, cria estrutura base
+        // Gera semanas do mês com a mesma lógica exata do index.html (renderWeeks)
+        // para garantir que os índices e intervalos sejam idênticos
+        const [y, m] = monthKey.split('-').map(Number);
+        const weeksGenerated = [];
+        let date = new Date(y, m - 1, 1);
+        while (date.getMonth() === m - 1) {
+            const start = new Date(date);
+            const end   = new Date(date);
+            end.setDate(date.getDate() + (6 - date.getDay()));
+            if (end.getMonth() !== m - 1) end.setTime(new Date(y, m, 0).getTime());
+            weeksGenerated.push({ start: start.toISOString(), end: end.toISOString() });
+            date.setDate(date.getDate() + (7 - date.getDay()));
+        }
+
+        // Garante que o mês existe no mainDB
         if (!mainDB[monthKey]) mainDB[monthKey] = {};
         if (!mainDB[monthKey].weeksData || mainDB[monthKey].weeksData.length === 0) {
-            // Gera semanas do mês dinamicamente (igual ao index.html)
-            const [y, m] = monthKey.split('-').map(Number);
-            let date = new Date(y, m - 1, 1);
-            const weeksGenerated = [];
-            while (date.getMonth() === m - 1) {
-                let end = new Date(date);
-                end.setDate(date.getDate() + (6 - date.getDay()));
-                if (end.getMonth() !== m - 1) end = new Date(y, m, 0);
-                weeksGenerated.push({ items: [], end: end.toISOString() });
-                date.setDate(date.getDate() + (7 - date.getDay()));
-            }
-            mainDB[monthKey].weeksData = weeksGenerated;
+            mainDB[monthKey].weeksData = weeksGenerated.map(() => ({ items: [] }));
         }
 
         // Chave única para identificar entrada criada pelo dia a dia
         const entryKey = `📅 ${k}`;
 
-        mainDB[monthKey].weeksData.forEach(week => {
-            if (!week.end) return;
-            const endDate  = new Date(week.end);
-            const startDate = new Date(endDate);
-            startDate.setDate(endDate.getDate() - 6);
+        // Acha a semana correta usando os intervalos calculados acima
+        weeksGenerated.forEach((wk, idx) => {
+            const startDate = new Date(wk.start);
+            const endDate   = new Date(wk.end);
+            // Zera horas para comparação de datas puras
+            startDate.setHours(0,0,0,0);
+            endDate.setHours(23,59,59,999);
 
-            if (!week.items) week.items = [];
+            if (!mainDB[monthKey].weeksData[idx]) {
+                mainDB[monthKey].weeksData[idx] = { items: [] };
+            }
+            if (!mainDB[monthKey].weeksData[idx].items) {
+                mainDB[monthKey].weeksData[idx].items = [];
+            }
+
+            const weekItems = mainDB[monthKey].weeksData[idx].items;
+            const itemIdx   = weekItems.findIndex(i => i.name === entryKey);
 
             if (day >= startDate && day <= endDate) {
-                const idx = week.items.findIndex(i => i.name === entryKey);
+                // Dia pertence a esta semana: insere ou atualiza
                 if (total > 0) {
                     const entry = { name: entryKey, val: formatter.format(total) };
-                    if (idx >= 0) week.items[idx] = entry;
-                    else week.items.push(entry);
+                    if (itemIdx >= 0) weekItems[itemIdx] = entry;
+                    else weekItems.push(entry);
                 } else {
-                    if (idx >= 0) week.items.splice(idx, 1);
+                    if (itemIdx >= 0) weekItems.splice(itemIdx, 1);
                 }
+            } else {
+                // Dia não pertence a esta semana: remove se estiver aqui por engano
+                if (itemIdx >= 0) weekItems.splice(itemIdx, 1);
             }
         });
 
@@ -1013,18 +1016,14 @@
         const todayKey = dateKey(today);
         const lastKey  = localStorage.getItem('fp_last_active_day');
 
+        // Quando vira o dia: garante que o slot do novo dia começa limpo
+        // Os dados de dias anteriores são PRESERVADOS para consulta
         if (lastKey && lastKey !== todayKey) {
-            // Virou o dia: zerar dados do dia anterior (não apaga, só limpa renda/gastos/rotas)
-            if (dayDB[lastKey]) {
-                dayDB[lastKey].rendas   = [];
-                dayDB[lastKey].gastos   = [];
-                dayDB[lastKey].kmHoje   = 0;
-                dayDB[lastKey].fuelCost = 0;
+            // Inicializa o novo dia com dados limpos (não apaga dias anteriores)
+            if (!dayDB[todayKey]) {
+                dayDB[todayKey] = { rendas: [], gastos: [], kmHoje: 0, fuelCost: 0 };
+                localStorage.setItem('fp_diaadia', JSON.stringify(dayDB));
             }
-            // Limpar rotas do histórico do dia anterior
-            const h = JSON.parse(localStorage.getItem('fp_route_history')) || [];
-            localStorage.setItem('fp_route_history', JSON.stringify(h.filter(r => r.date !== lastKey)));
-            localStorage.setItem('fp_diaadia', JSON.stringify(dayDB));
         }
 
         localStorage.setItem('fp_last_active_day', todayKey);

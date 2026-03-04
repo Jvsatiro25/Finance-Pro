@@ -50,7 +50,7 @@
         .reserve-card h2 { margin: 6px 0 0 0; font-size: 1.8rem; font-weight: 800; }
         .main-layout { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
         @media (max-width: 850px) { .main-layout { grid-template-columns: 1fr; } }
-        .section-card { background: var(--card-bg); border-radius: 16px; padding: 20px; border: 1px solid var(--border); }
+        .section-card { background: var(--card-bg); border-radius: 16px; padding: 20px; border: 1px solid var(--border); overflow: hidden; }
         .card-title { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
         .card-title-left { display: flex; align-items: center; gap: 10px; }
         .card-total-badge { font-size: 0.72rem; font-weight: 800; padding: 3px 9px; border-radius: 50px; background: rgba(239,68,68,0.12); color: #f87171; border: 1px solid rgba(239,68,68,0.25); letter-spacing: 0.02em; }
@@ -79,7 +79,6 @@
         .w-meta { font-size: 1.05rem; font-weight: 800; color: var(--success); }
         .week-items { margin-top: 10px; border-top: 1px solid var(--border); padding-top: 10px; }
         .week-item-row { display: grid; grid-template-columns: 1fr auto 28px; gap: 6px; margin-bottom: 6px; align-items: center; }
-        .week-item-row.day-sync { background: rgba(34,211,238,0.05); border: 1px solid rgba(34,211,238,0.15); border-radius: 6px; padding: 2px 6px; }
         .week-item-row input { padding: 8px 6px; font-size: 0.85rem; }
         .btn-del-item { color: var(--danger); background: none; border: none; cursor: pointer; font-size: 0.9rem; padding: 4px; }
         .week-total-row { display: flex; justify-content: space-between; align-items: center; margin-top: 10px; padding-top: 8px; border-top: 1px dashed var(--border); }
@@ -151,8 +150,8 @@
                     </div>
                     <button class="btn-add" onclick="addRow('exp-list','','R$ 0,00','R$ 0,00',true)">+</button>
                 </div>
-                <div class="col-headers"><span>Item</span><span>Meta</span><span>Valor</span><span style="text-align:center">Venc.</span><span></span></div>
-                <div id="exp-list"></div>
+                <div style="overflow-x:auto"><div style="min-width:420px"><div class="col-headers"><span>Item</span><span>Meta</span><span>Valor</span><span style="text-align:center">Venc.</span><span></span></div>
+                <div id="exp-list"></div></div></div>
             </div>
             <div class="section-card">
                 <div class="card-title">
@@ -162,8 +161,8 @@
                     </div>
                     <button class="btn-add" onclick="addRow('sub-list','','R$ 0,00','R$ 0,00',true)">+</button>
                 </div>
-                <div class="col-headers"><span>Item</span><span>Meta</span><span>Valor</span><span style="text-align:center">Venc.</span><span></span></div>
-                <div id="sub-list"></div>
+                <div style="overflow-x:auto"><div style="min-width:420px"><div class="col-headers"><span>Item</span><span>Meta</span><span>Valor</span><span style="text-align:center">Venc.</span><span></span></div>
+                <div id="sub-list"></div></div></div>
             </div>
         </div>
         <h3 style="margin-top:35px;color:var(--accent);">🗓️ Planejamento de Semanas</h3>
@@ -253,11 +252,11 @@
         calculate();
     }
 
-    function getWeekItems(card) {
-        return Array.from(card.querySelectorAll(".week-item-row")).map(r => {
-            const descInput = r.querySelector("[data-day-desc]");
-            if (descInput) {
-                return { name: descInput.dataset.dayKey, val: r.querySelector("input[placeholder='R$ 0,00']").value };
+    function getWeekItems(card){
+        return Array.from(card.querySelectorAll('.week-item-row')).map(r => {
+            const dayKey = r.dataset.dayKey;
+            if (dayKey) {
+                return { name: dayKey, val: r.querySelector('.wi-val').value };
             }
             return { name: r.children[0].value, val: r.children[1].value };
         });
@@ -267,24 +266,24 @@
         const container = btn.previousElementSibling;
         const row = document.createElement('div');
         const isDaySync = /^📅 \d{4}-\d{2}-\d{2}$/.test(name);
-        row.className = isDaySync ? 'week-item-row day-sync' : 'week-item-row';
 
         if (isDaySync) {
-            // Exibe a data formatada como rótulo fixo + valor editável
-            const [,dateStr] = name.split(' ');
+            const [, dateStr] = name.split(' ');
             const [y, m, d] = dateStr.split('-');
-            const dateLabel = `📅 ${d}/${m}`;
+            const dateLabel = `${d}/${m}`;
+            row.className = 'week-item-row';
+            row.dataset.dayKey = name;
+            row.style.cssText = 'background:rgba(34,211,238,0.06);border:1px solid rgba(34,211,238,0.2);border-radius:8px;padding:4px 8px;';
             row.innerHTML = `
-                <div style="display:flex;align-items:center;gap:6px;min-width:0">
-                    <span style="font-size:0.8rem;font-weight:700;color:var(--accent);white-space:nowrap">${dateLabel}</span>
-                    <input type="text" placeholder="Descrição (opcional)" value="" oninput="calculate()" 
-                        style="font-size:0.78rem;padding:6px 6px;color:#94a3b8;min-width:0;flex:1"
-                        data-day-key="${name}" data-day-desc="true">
+                <div style="display:flex;align-items:center;gap:8px;min-width:0;flex:1">
+                    <span style="font-size:0.75rem;font-weight:800;color:var(--accent);white-space:nowrap;flex-shrink:0">📅 ${dateLabel}</span>
+                    <input type="text" class="wi-desc" placeholder="Descrição (opcional)" oninput="calculate()" style="font-size:0.8rem;padding:6px 8px;color:#94a3b8;border-color:rgba(34,211,238,0.15);min-width:0;">
                 </div>
-                <input type="text" placeholder="R$ 0,00" value="${val}" oninput="fmtWeekItem(this)" style="width:110px">
+                <input type="text" class="wi-val" placeholder="R$ 0,00" value="${val}" oninput="fmtWeekItem(this)" style="width:100px;font-weight:800;color:var(--accent);">
                 <button class="btn-del-item" onclick="this.parentElement.remove();calculate()">✕</button>`;
         } else {
-            row.innerHTML = `<input type="text" placeholder="Descrição" value="${name}" oninput="calculate()"><input type="text" placeholder="R$ 0,00" value="${val}" oninput="fmtWeekItem(this)" style="width:110px"><button class="btn-del-item" onclick="this.parentElement.remove();calculate()">✕</button>`;
+            row.className = 'week-item-row';
+            row.innerHTML = `<input type="text" placeholder="Descrição" value="${name}" oninput="calculate()"><input type="text" class="wi-val" placeholder="R$ 0,00" value="${val}" oninput="fmtWeekItem(this)" style="width:110px"><button class="btn-del-item" onclick="this.parentElement.remove();calculate()">✕</button>`;
         }
 
         container.appendChild(row);
@@ -407,7 +406,7 @@
             const startDate=new Date(hiddenInput.dataset.start);
             const endDate=new Date(hiddenInput.dataset.end);
             const isPast=today>endDate;
-            const gasto=Array.from(card.querySelectorAll('.week-item-row input[placeholder="R$ 0,00"]'))
+            const gasto=Array.from(card.querySelectorAll('.week-item-row .wi-val, .week-item-row input[placeholder="R$ 0,00"]'))
                 .reduce((s,i)=>s+parseValue(i.value),0);
             return {card,startDate,endDate,isPast,gasto};
         });

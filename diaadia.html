@@ -492,9 +492,7 @@
     /* ── Sync com semana do painel ─────────────────────────────────────── */
     function syncToWeek() {
         const d = getDayData();
-        const totalGastos = d.gastos.reduce((s,i)=>s+i.val,0);
-        const totalFuel   = d.fuelCost || 0;
-        const total = totalGastos + totalFuel;
+        const total = d.gastos.reduce((s,i)=>s+i.val,0);
         const k = dateKey(currentDate);
         const day = new Date(k + 'T00:00:00');
 

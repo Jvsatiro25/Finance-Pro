@@ -106,6 +106,31 @@
         .note-text { white-space: pre-wrap; line-height: 1.6; color: #cbd5e1; font-size: 0.95rem; flex: 1; }
 
         label { font-size: 0.7rem; color: #94a3b8; text-transform: uppercase; font-weight: 700; display: block; margin-bottom: 8px; }
+
+        /* Edit Modal */
+        .modal-overlay {
+            position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+            display: flex; align-items: center; justify-content: center;
+            z-index: 2000; padding: 20px; opacity: 0; pointer-events: none;
+            transition: opacity 0.2s ease;
+        }
+        .modal-overlay.active { opacity: 1; pointer-events: all; }
+        .modal {
+            background: var(--card-bg); border: 1px solid var(--accent);
+            border-radius: 16px; padding: 24px; width: 100%; max-width: 500px;
+            transform: translateY(20px); transition: transform 0.2s ease;
+        }
+        .modal-overlay.active .modal { transform: translateY(0); }
+        .modal-title { font-weight: 800; font-size: 1rem; color: var(--accent); margin-bottom: 16px; }
+        .modal-actions { display: flex; gap: 10px; margin-top: 16px; }
+        .btn-modal-save { background: var(--accent); color: var(--bg); border: none; padding: 12px 20px; border-radius: 8px; font-weight: 800; cursor: pointer; flex: 1; font-size: 0.95rem; font-family: inherit; }
+        .btn-modal-cancel { background: none; border: 1px solid var(--border); color: var(--text); padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; font-family: inherit; }
+
+        /* Make note cards clickable */
+        .note-card { cursor: pointer; transition: border-color 0.2s, transform 0.15s; }
+        .note-card:hover { border-color: var(--accent); transform: translateY(-2px); }
+        .note-card.expired:hover { border-color: var(--danger); }
+        .note-card.urgent:hover { border-color: var(--warn); }
     </style>
 </head>
 <body>
@@ -239,13 +264,62 @@
             // Texto inserido via textContent para evitar quebra de HTML
             card.querySelector('.note-text').textContent = note.text;
             // Botão de excluir via addEventListener, sem onclick inline
-            card.querySelector('.btn-delete').addEventListener('click', () => deleteNote(note.id));
+            card.querySelector('.btn-delete').addEventListener('click', (e) => { e.stopPropagation(); deleteNote(note.id); });
+            card.addEventListener('click', () => openEdit(note));
 
             grid.appendChild(card);
         });
     }
 
+
+    let editingId = null;
+
+    function openEdit(note) {
+        editingId = note.id;
+        document.getElementById('edit-text').value = note.text;
+        document.getElementById('edit-deadline').value = note.deadline || '';
+        document.getElementById('edit-modal').classList.add('active');
+    }
+
+    function closeModal() {
+        document.getElementById('edit-modal').classList.remove('active');
+        editingId = null;
+    }
+
+    function handleModalClick(e) {
+        if (e.target === document.getElementById('edit-modal')) closeModal();
+    }
+
+    function saveEdit() {
+        const text = document.getElementById('edit-text').value.trim();
+        if (!text) return;
+        const idx = notes.findIndex(n => n.id === editingId);
+        if (idx >= 0) {
+            notes[idx].text = text;
+            notes[idx].deadline = document.getElementById('edit-deadline').value || null;
+        }
+        closeModal();
+        saveNotes();
+    }
+
     window.onload = renderNotes;
 </script>
+
+<!-- Edit Modal -->
+<div class="modal-overlay" id="edit-modal" onclick="handleModalClick(event)">
+    <div class="modal">
+        <div class="modal-title">✏️ Editar Anotação</div>
+        <label>Texto</label>
+        <textarea id="edit-text" style="min-height:140px;margin-bottom:12px;width:100%;"></textarea>
+        <div class="deadline-group">
+            <label>Data Limite (opcional)</label>
+            <input type="date" id="edit-deadline" style="width:100%;margin-bottom:0;">
+        </div>
+        <div class="modal-actions">
+            <button class="btn-modal-cancel" onclick="closeModal()">Cancelar</button>
+            <button class="btn-modal-save" onclick="saveEdit()">💾 Salvar</button>
+        </div>
+    </div>
+</div>
 </body>
 </html>
